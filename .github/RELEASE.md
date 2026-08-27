@@ -28,7 +28,7 @@ The normal release sequence is:
 3. Create and push the matching `v*` tag. Both `script/release-tag.sh` and `script/bump-version.sh` reject a tag without a valid bilingual changelog entry.
 4. `Release Trigger` dispatches the shared `Release` workflow on the `dev` branch.
 5. The workflow checks the application version and tagged changelog entry before starting expensive builds.
-6. macOS ARM64, macOS x86_64, Linux x86_64, Linux ARM64, and Windows x86_64 build in parallel in one matrix.
+6. macOS ARM64, macOS x86_64, and Windows x86_64 build in parallel in one matrix.
 7. After all requested platforms finish, the workflow extracts the tagged entry, uses it as the GitHub Release body, and writes the same Markdown to the R2 `latest.json` `release_notes` field.
 
 The build workflow checks out the requested tag, while the workflow itself runs from `dev`. This keeps Cargo input caches and sccache data reusable across tags and repair runs.
@@ -75,8 +75,6 @@ Do not move the release tag. Open **Actions → Release → Run workflow**, ente
 | --- | --- |
 | `macos-arm64` | `aarch64-apple-darwin` |
 | `macos-x64` | `x86_64-apple-darwin` |
-| `linux-x64` | `x86_64-unknown-linux-gnu` |
-| `linux-arm64` | `aarch64-unknown-linux-gnu` |
 | `windows-x64` | `x86_64-pc-windows-msvc` |
 
 The repair run rebuilds only the selected platform, overwrites its assets on the existing GitHub Release, regenerates the complete `sha256sums.txt`, synchronizes the GitHub Release body from the changelog stored in that tag, and triggers R2 synchronization. Assets from other platforms are preserved.
@@ -87,12 +85,11 @@ For a failed matrix job in the same workflow run, prefer **Re-run failed jobs**.
 
 ## Cache model
 
-- CI, Release, ARM Linux, and the standalone Windows MSI build use the same Cargo registry and Git dependency cache namespace, keyed only by runner OS and `Cargo.lock`. Linux x86_64 can therefore seed Linux ARM64 inputs, and macOS ARM64 can seed macOS x86_64 inputs.
-- Rust compilation uses sccache with the GitHub Actions backend in every Rust build workflow. All five release platforms run from the same default `dev` workflow scope and reuse compiler objects from earlier runs for the same target and profile.
+- CI, Release, and the standalone Windows MSI build use the same Cargo registry and Git dependency cache namespace, keyed only by runner OS and `Cargo.lock`. macOS ARM64 can therefore seed macOS x86_64 inputs.
+- Rust compilation uses sccache with the GitHub Actions backend in every Rust build workflow. All three release platforms run from the same default `dev` workflow scope and reuse compiler objects from earlier runs for the same target and profile.
 - The implicit `Swatinem/rust-cache` inside `actions-rust-lang/setup-rust-toolchain` is disabled, and `target/` is not stored by `actions/cache`. This avoids duplicating multi-gigabyte target archives that would evict useful sccache objects from GitHub's repository cache quota.
 - Release jobs explicitly start sccache and keep it alive through long linking and LTO phases so the final statistics cover the complete build.
 - Build caches are shared through workflow runs on the default `dev` branch instead of being isolated under each release tag.
-- ARM Linux uses two Cargo build jobs, thin LTO, and 16 codegen units to reduce peak memory while retaining release optimization.
 
 ## Safety properties
 
@@ -102,4 +99,4 @@ For a failed matrix job in the same workflow run, prefer **Re-run failed jobs**.
 - GitHub Release notes and R2 updater `release_notes` are extracted from the same tagged changelog entry.
 - Publishing uses `--clobber` only for newly built platform files and `sha256sums.txt`.
 - Legacy pre-changelog repairs preserve their existing GitHub Release body.
-- All five primary platform builds belong to one matrix, so they start in parallel and a failed job can be rerun without rebuilding successful matrix jobs.
+- All three primary platform builds belong to one matrix, so they start in parallel and a failed job can be rerun without rebuilding successful matrix jobs.

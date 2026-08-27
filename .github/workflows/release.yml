@@ -15,12 +15,7 @@ on:
           - all
           - macos-arm64
           - macos-x64
-          - linux-x64
-          - linux-x64-portable
-          - linux-arm64
-          - linux-arm64-portable
           - windows-x64
-          - windows-x86
 
 permissions:
   actions: write
@@ -114,25 +109,15 @@ jobs:
           RELEASE_PLATFORM: ${{ inputs.platform }}
         run: |
           set -euo pipefail
-          macos_arm64='{"target":"aarch64-apple-darwin","os":"macos-latest","binary":"navop","archive":"navop-aarch64-apple-darwin.tar.gz","public_label":"macos-arm64","variant":"standard","arm_linux":false,"windows_native_rdp":false,"portable_linux":false}'
-          macos_x64='{"target":"x86_64-apple-darwin","os":"macos-15-intel","binary":"navop","archive":"navop-x86_64-apple-darwin.tar.gz","public_label":"macos-x64","variant":"standard","arm_linux":false,"windows_native_rdp":false,"portable_linux":false}'
-          linux_x64='{"target":"x86_64-unknown-linux-gnu","os":"ubuntu-latest","binary":"navop","archive":"navop-x86_64-unknown-linux-gnu.tar.gz","public_label":"linux-x64","variant":"standard","arm_linux":false,"windows_native_rdp":false,"portable_linux":false}'
-          linux_x64_portable='{"target":"x86_64-unknown-linux-gnu","os":"ubuntu-22.04","binary":"navop","archive":"navop-x86_64-unknown-linux-gnu-portable.tar.gz","public_label":"linux-x64-portable","variant":"portable","arm_linux":false,"windows_native_rdp":false,"portable_linux":true}'
-          linux_arm64='{"target":"aarch64-unknown-linux-gnu","os":"ubuntu-24.04-arm","binary":"navop","archive":"navop-aarch64-unknown-linux-gnu.tar.gz","public_label":"linux-arm64","variant":"standard","arm_linux":true,"windows_native_rdp":false,"portable_linux":false}'
-          linux_arm64_portable='{"target":"aarch64-unknown-linux-gnu","os":"ubuntu-24.04-arm","binary":"navop","archive":"navop-aarch64-unknown-linux-gnu-portable.tar.gz","public_label":"linux-arm64-portable","variant":"portable","arm_linux":true,"windows_native_rdp":false,"portable_linux":true}'
-          windows_x64='{"target":"x86_64-pc-windows-msvc","os":"windows-latest","binary":"navop.exe","archive":"navop-x86_64-pc-windows-msvc.zip","public_label":"windows-x64","variant":"standard","arm_linux":false,"windows_native_rdp":true,"portable_linux":false,"windows_arch":"x64"}'
-          windows_x86='{"target":"i686-pc-windows-msvc","os":"windows-latest","binary":"navop.exe","archive":"navop-i686-pc-windows-msvc.zip","public_label":"win32","variant":"standard","arm_linux":false,"windows_native_rdp":true,"portable_linux":false,"windows_arch":"x86"}'
+          macos_arm64='{"target":"aarch64-apple-darwin","os":"macos-latest","binary":"navop","archive":"navop-aarch64-apple-darwin.tar.gz","public_label":"macos-arm64","variant":"standard"}'
+          macos_x64='{"target":"x86_64-apple-darwin","os":"macos-15-intel","binary":"navop","archive":"navop-x86_64-apple-darwin.tar.gz","public_label":"macos-x64","variant":"standard"}'
+          windows_x64='{"target":"x86_64-pc-windows-msvc","os":"windows-latest","binary":"navop.exe","archive":"navop-x86_64-pc-windows-msvc.zip","public_label":"windows-x64","variant":"standard","windows_arch":"x64"}'
 
           case "$RELEASE_PLATFORM" in
-            all) matrix="[$macos_arm64,$macos_x64,$linux_x64,$linux_x64_portable,$linux_arm64,$linux_arm64_portable,$windows_x64,$windows_x86]" ;;
+            all) matrix="[$macos_arm64,$macos_x64,$windows_x64]" ;;
             macos-arm64) matrix="[$macos_arm64]" ;;
             macos-x64) matrix="[$macos_x64]" ;;
-            linux-x64) matrix="[$linux_x64,$linux_x64_portable]" ;;
-            linux-x64-portable) matrix="[$linux_x64_portable]" ;;
-            linux-arm64) matrix="[$linux_arm64,$linux_arm64_portable]" ;;
-            linux-arm64-portable) matrix="[$linux_arm64_portable]" ;;
             windows-x64) matrix="[$windows_x64]" ;;
-            windows-x86) matrix="[$windows_x86]" ;;
             *) echo "::error::Unsupported platform: $RELEASE_PLATFORM"; exit 1 ;;
           esac
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
@@ -145,7 +130,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.arm_linux && 180 || 120 }}
+    timeout-minutes: 120
 
     steps:
       - uses: actions/checkout@v7
@@ -210,10 +195,6 @@ jobs:
 
           df -h
 
-      - name: Install system dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: script/bootstrap
-
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: script/bootstrap
@@ -232,26 +213,6 @@ jobs:
           $env:Path = "$nasmDir;$env:Path"
           $nasmDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           nasm -v
-
-      - name: Install Zig toolchain (portable Linux)
-        if: matrix.portable_linux
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m venv "$RUNNER_TEMP/ziglang"
-          "$RUNNER_TEMP/ziglang/bin/python" -m pip install ziglang==0.14.1
-          cargo install --locked cargo-zigbuild --version 0.23.0
-          echo "CARGO_ZIGBUILD_PYTHON_PATH=$RUNNER_TEMP/ziglang/bin/python" >> "$GITHUB_ENV"
-          "$RUNNER_TEMP/ziglang/bin/python" -m ziglang version
-          cargo-zigbuild --version
-
-      - name: Install portable packaging dependencies
-        if: matrix.portable_linux
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y binutils musl-tools
 
       - name: Configure MSVC environment
         if: runner.os == 'Windows'
@@ -289,7 +250,7 @@ jobs:
           fi
 
       - name: Build release binary
-        if: runner.os != 'Windows'
+        if: runner.os == 'macOS'
         shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -299,26 +260,9 @@ jobs:
           ONETCLI_TEAM_MANAGEMENT_URL_TEMPLATE: ${{ vars.ONETCLI_TEAM_MANAGEMENT_URL_TEMPLATE }}
         run: |
           set -euo pipefail
-          if [ "${{ matrix.arm_linux }}" = "true" ]; then
-            export CARGO_BUILD_JOBS=2
-            export CARGO_PROFILE_RELEASE_LTO=thin
-            export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
-          fi
           cargo --version
           rustc --version
-          echo "CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-}"
-          echo "CARGO_PROFILE_RELEASE_LTO=${CARGO_PROFILE_RELEASE_LTO:-}"
-          echo "CARGO_PROFILE_RELEASE_CODEGEN_UNITS=${CARGO_PROFILE_RELEASE_CODEGEN_UNITS:-}"
-          if [ "${{ matrix.portable_linux }}" = "true" ]; then
-            cargo zigbuild \
-              --release \
-              -p main \
-              --target "${{ matrix.target }}.2.28" \
-              --no-default-features \
-              --features wasm-components
-          else
-            cargo build --release -p main --target "${{ matrix.target }}"
-          fi
+          cargo build --release -p main --target "${{ matrix.target }}"
           test -x "target/${{ matrix.target }}/release/${{ matrix.binary }}"
 
       - name: Build release binary (Windows)
@@ -336,14 +280,9 @@ jobs:
           }
 
           $target = "${{ matrix.target }}"
-          $linkerArchitecture = if ($target -eq "i686-pc-windows-msvc") {
-            "x86"
-          } else {
-            "x64"
-          }
           $linker = Join-Path `
             $env:VCToolsInstallDir `
-            "bin\Hostx64\$linkerArchitecture\link.exe"
+            "bin\Hostx64\x64\link.exe"
           if (-not (Test-Path -LiteralPath $linker -PathType Leaf)) {
             throw "MSVC linker was not found at '$linker'"
           }
@@ -369,15 +308,6 @@ jobs:
             throw "Release binary was not created: '$binary'"
           }
 
-      - name: Verify portable Linux glibc baseline
-        if: matrix.portable_linux
-        shell: bash
-        run: |
-          set -euo pipefail
-          script/check-linux-glibc-baseline.sh \
-            "target/${{ matrix.target }}/release/${{ matrix.binary }}" \
-            "2.28"
-
       - name: Save shared Cargo inputs
         if: >-
           ${{
@@ -387,7 +317,6 @@ jobs:
             (
               needs.prepare.outputs.platform != 'all' ||
               matrix.target == 'x86_64-apple-darwin' ||
-              matrix.target == 'x86_64-unknown-linux-gnu' ||
               matrix.target == 'x86_64-pc-windows-msvc'
             )
           }}
@@ -414,166 +343,6 @@ jobs:
           tar czf ${{ matrix.archive }} -C target Navop.app
           cp "${{ matrix.archive }}" "${PUBLIC_BASENAME}.tar.gz"
           mv "navop-${{ matrix.target }}.dmg" "${PUBLIC_BASENAME}.dmg"
-
-      - name: Package (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf package
-
-          if [ "${{ matrix.portable_linux }}" = "true" ]; then
-            script/package-linux-portable.sh \
-              --binary "target/${{ matrix.target }}/release/${{ matrix.binary }}" \
-              --output package \
-              --launcher-source script/linux-portable-launcher.c \
-              --target "${{ matrix.target }}" \
-              --glibc-baseline "2.28"
-          else
-            mkdir -p package/usr/bin
-            cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" package/usr/bin/
-          fi
-
-          mkdir -p package/usr/share/applications
-          mkdir -p package/usr/share/mime/packages
-          mkdir -p package/usr/share/icons/hicolor/128x128/apps
-          mkdir -p package/usr/share/icons/hicolor/256x256/apps
-          mkdir -p package/usr/share/icons/hicolor/512x515/apps
-          cp resources/linux/navop.desktop package/usr/share/applications/
-          cp resources/linux/navop.xml package/usr/share/mime/packages/
-          cp resources/linux/navop-128.png package/usr/share/icons/hicolor/128x128/apps/navop.png
-          cp resources/linux/navop-256.png package/usr/share/icons/hicolor/256x256/apps/navop.png
-          cp resources/linux/navop-512.png package/usr/share/icons/hicolor/512x515/apps/navop.png
-          tar \
-            --sort=name \
-            --mtime='UTC 1970-01-01' \
-            --owner=0 \
-            --group=0 \
-            --numeric-owner \
-            -czf "${{ matrix.archive }}" \
-            -C package .
-          cp "${{ matrix.archive }}" "${PUBLIC_BASENAME}.tar.gz"
-
-      - name: Install Linux packaging dependencies
-        if: matrix.target == 'x86_64-unknown-linux-gnu' && !matrix.portable_linux
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y rpm
-
-      - name: Package Linux installers (x86_64)
-        if: matrix.target == 'x86_64-unknown-linux-gnu' && !matrix.portable_linux
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          PACKAGE_VERSION="${ONETCLI_VERSION//-/.}"
-          DEB_NAME="navop_${PACKAGE_VERSION}_amd64.deb"
-          RPM_NAME="navop-${PACKAGE_VERSION}-1.x86_64.rpm"
-          APPIMAGE_NAME="navop_${PACKAGE_VERSION}_amd64.AppImage"
-
-          rm -rf package-deb rpmbuild Navop.AppDir linuxdeploy-x86_64.AppImage
-
-          mkdir -p package-deb/DEBIAN
-          cp -a package/. package-deb/
-          cat > package-deb/DEBIAN/control <<EOF
-          Package: navop
-          Version: ${PACKAGE_VERSION}
-          Section: utils
-          Priority: optional
-          Architecture: amd64
-          Provides: onetcli
-          Replaces: onetcli
-          Conflicts: onetcli
-          Maintainer: feigeCode <noreply@github.com>
-          Homepage: https://github.com/feigeCode/navop
-          Description: Navop - Database, SSH, Terminal, AI Tools
-          EOF
-          cat > package-deb/DEBIAN/postinst <<'EOF'
-          #!/bin/sh
-          set -e
-          if command -v update-mime-database >/dev/null 2>&1; then
-            update-mime-database /usr/share/mime
-          fi
-          if command -v update-desktop-database >/dev/null 2>&1; then
-            update-desktop-database /usr/share/applications
-          fi
-          EOF
-          cat > package-deb/DEBIAN/postrm <<'EOF'
-          #!/bin/sh
-          set -e
-          if command -v update-mime-database >/dev/null 2>&1; then
-            update-mime-database /usr/share/mime
-          fi
-          if command -v update-desktop-database >/dev/null 2>&1; then
-            update-desktop-database /usr/share/applications
-          fi
-          EOF
-          chmod 0755 package-deb/DEBIAN/postinst package-deb/DEBIAN/postrm
-          dpkg-deb --root-owner-group --build package-deb "${DEB_NAME}"
-
-          RPM_ROOT="${PWD}/rpmbuild"
-          mkdir -p "${RPM_ROOT}"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-          tar czf "${RPM_ROOT}/SOURCES/navop-${PACKAGE_VERSION}.tar.gz" -C package .
-          cat > "${RPM_ROOT}/SPECS/navop.spec" <<EOF
-          Name: navop
-          Version: ${PACKAGE_VERSION}
-          Release: 1%{?dist}
-          Summary: Navop - Database, SSH, Terminal, AI Tools
-          License: Apache-2.0
-          URL: https://github.com/feigeCode/navop
-          BuildArch: x86_64
-          Provides: onetcli = %{version}-%{release}
-          Obsoletes: onetcli < %{version}-%{release}
-          Source0: %{name}-%{version}.tar.gz
-
-          %description
-          Navop - Database, SSH, Terminal, AI Tools.
-
-          %prep
-          mkdir -p %{_builddir}/%{name}-%{version}
-          tar -xzf %{SOURCE0} -C %{_builddir}/%{name}-%{version}
-
-          %build
-
-          %install
-          mkdir -p %{buildroot}
-          cp -a %{_builddir}/%{name}-%{version}/* %{buildroot}/
-
-          %post
-          update-mime-database /usr/share/mime >/dev/null 2>&1 || :
-          update-desktop-database /usr/share/applications >/dev/null 2>&1 || :
-
-          %postun
-          update-mime-database /usr/share/mime >/dev/null 2>&1 || :
-          update-desktop-database /usr/share/applications >/dev/null 2>&1 || :
-
-          %files
-          /usr/bin/navop
-          /usr/share/applications/navop.desktop
-          /usr/share/mime/packages/navop.xml
-          /usr/share/icons/hicolor/128x128/apps/navop.png
-          /usr/share/icons/hicolor/256x256/apps/navop.png
-          /usr/share/icons/hicolor/512x515/apps/navop.png
-          EOF
-          rpmbuild --define "_topdir ${RPM_ROOT}" -bb "${RPM_ROOT}/SPECS/navop.spec"
-          generated_rpm="$(find "${RPM_ROOT}/RPMS" -name "navop-${PACKAGE_VERSION}-1*.x86_64.rpm" -print -quit)"
-          test -n "${generated_rpm}"
-          cp "${generated_rpm}" "${RPM_NAME}"
-
-          mkdir -p Navop.AppDir
-          cp -a package/. Navop.AppDir/
-          curl -L -o linuxdeploy-x86_64.AppImage \
-            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          chmod +x linuxdeploy-x86_64.AppImage
-          VERSION="${PACKAGE_VERSION}" APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-x86_64.AppImage \
-            --appdir Navop.AppDir \
-            --executable Navop.AppDir/usr/bin/navop \
-            --desktop-file resources/linux/navop.desktop \
-            --icon-file package/usr/share/icons/hicolor/512x515/apps/navop.png \
-            --output appimage
-          generated_appimage="$(find . -maxdepth 1 -name '*.AppImage' ! -name 'linuxdeploy-x86_64.AppImage' -print -quit)"
-          test -n "${generated_appimage}"
-          mv "${generated_appimage}" "${APPIMAGE_NAME}"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
@@ -649,16 +418,6 @@ jobs:
             navop-*-${{ matrix.public_label }}.msi
             navop-*-${{ matrix.public_label }}.exe
           if-no-files-found: error
-
-      - name: Upload Linux installer artifacts
-        if: matrix.target == 'x86_64-unknown-linux-gnu' && !matrix.portable_linux
-        uses: actions/upload-artifact@v4
-        with:
-          name: navop-linux-x86_64-installers
-          path: |
-            navop_*.deb
-            navop-*.rpm
-            navop_*.AppImage
 
   release:
     name: Publish Release

@@ -31,4 +31,4 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 - [ ] I have read the [CONTRIBUTING](../CONTRIBUTING.md) document and followed the guidelines.
 - [ ] Reviewed the changes in this PR and confirmed AI generated code (If any) is accurate.
 - [ ] Passed `cargo run` for story tests related to the changes.
-- [ ] Tested macOS, Windows and Linux platforms performance (if the change is platform-specific)
+- [ ] Tested the affected Windows x64 and/or macOS build (if the change is platform-specific)

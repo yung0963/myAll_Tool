@@ -1,13 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidateSet(
-        "x86_64-pc-windows-msvc",
-        "i686-pc-windows-msvc"
-    )]
-    [string[]] $Target = @(
-        "x86_64-pc-windows-msvc",
-        "i686-pc-windows-msvc"
-    )
+    [ValidateSet("x86_64-pc-windows-msvc")]
+    [string[]] $Target = @("x86_64-pc-windows-msvc")
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,7 +75,6 @@ function Get-VcVarsArchitecture {
 
     switch ($RustTarget) {
         "x86_64-pc-windows-msvc" { return "x64" }
-        "i686-pc-windows-msvc" { return "x86" }
         default { throw "Unsupported Windows RDP probe target: $RustTarget" }
     }
 }

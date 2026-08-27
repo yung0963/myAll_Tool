@@ -174,18 +174,15 @@ See the [Navop MCP and CLI repository](https://github.com/feigeCode/navop-mcp) f
 
 ## Install
 
-Download the latest build from [GitHub Releases](https://github.com/feigeCode/navop/releases/latest). Each release includes `sha256sums.txt` for checksum verification. Release assets follow the `navop-<version>-<platform>-<arch>.<ext>` convention — for example `navop-0.11.0-macos-arm64.dmg`, `navop-0.11.0-windows-x64.msi`, and `navop-0.11.0-linux-x64.tar.gz`; 32-bit Windows builds use the `win32` label (e.g. `navop-0.11.0-win32.msi`). Linux `.deb` and `.AppImage` installers keep their distro naming (`navop_<version>_amd64.deb` / `navop_<version>_amd64.AppImage`).
+This personal fork publishes Windows x64 and macOS builds only. Each release includes `sha256sums.txt` for checksum verification, and assets follow the `navop-<version>-<platform>-<arch>.<ext>` convention.
 
 | Platform | Architecture | Artifacts |
 | --- | --- | --- |
 | macOS | Apple Silicon | `navop-<version>-macos-arm64.dmg`, `navop-<version>-macos-arm64.tar.gz` |
 | macOS | Intel | `navop-<version>-macos-x64.dmg`, `navop-<version>-macos-x64.tar.gz` |
-| Linux | x86_64 | `navop-<version>-linux-x64.tar.gz`, `navop-<version>-linux-x64-portable.tar.gz`, `navop_<version>_amd64.deb`, `navop-<version>-1.x86_64.rpm`, `navop_<version>_amd64.AppImage` |
-| Linux | ARM64 | `navop-<version>-linux-arm64.tar.gz`, `navop-<version>-linux-arm64-portable.tar.gz` |
 | Windows | x86_64 | `navop-<version>-windows-x64.msi`, `navop-<version>-windows-x64.exe`, `navop-<version>-windows-x64.zip`, `navop-<version>-windows-x64-portable.zip` |
-| Windows | x86 (32-bit) | `navop-<version>-win32.msi`, `navop-<version>-win32.exe`, `navop-<version>-win32.zip`, `navop-<version>-win32-portable.zip` |
 
-The Windows `.msi` and `.exe` are bilingual per-user installers and do not require administrator privileges when using the default location. The EXE installer wraps the same MSI installation. The standard `.zip` requires no installation but still uses the normal per-user data directories and supports remembered master-key unlock. Use `-portable.zip` only when the application data must stay beside the executable. Portable archives (Linux and Windows) ask for the master key on every start by default. You may explicitly choose in Settings to store an encrypted, automatically recoverable copy under `data/state/key_storage`, but this uses a key embedded in the application rather than device-bound protection; anyone who obtains both the application and the complete `data` directory may be able to recover the master key.
+The Windows `.msi` and `.exe` are bilingual per-user installers and do not require administrator privileges when using the default location. The EXE installer wraps the same MSI installation. The standard `.zip` requires no installation but still uses the normal per-user data directories and supports remembered master-key unlock. Use `-portable.zip` only when the application data must stay beside the executable. The portable Windows archive asks for the master key on every start by default. You may explicitly choose in Settings to store an encrypted, automatically recoverable copy under `data/state/key_storage`, but this uses a key embedded in the application rather than device-bound protection; anyone who obtains both the application and the complete `data` directory may be able to recover the master key.
 
 > **Upgrading from the Windows ZIP in v0.10.1 or earlier:** those archives enabled portable mode. Download the new `-portable.zip`, extract it to a new directory, and copy the complete existing `data` directory into it. Extracting the new standard `.zip` to a different directory, or switching to the MSI/EXE installer, uses the normal Windows user data location and does not automatically migrate portable data. The old connections and settings may therefore appear missing even though the original portable data has not been deleted.
 

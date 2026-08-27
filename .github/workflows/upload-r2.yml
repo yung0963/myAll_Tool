@@ -183,13 +183,8 @@ jobs:
           const updaterAssets = {
             "aarch64-apple-darwin": "navop-aarch64-apple-darwin.tar.gz",
             "x86_64-apple-darwin": "navop-x86_64-apple-darwin.tar.gz",
-            "x86_64-unknown-linux-gnu": "navop-x86_64-unknown-linux-gnu.tar.gz",
             "x86_64-pc-windows-msvc": "navop-x86_64-pc-windows-msvc.zip",
-            "i686-pc-windows-msvc": "navop-i686-pc-windows-msvc.zip",
           };
-          if (fs.existsSync("artifacts/navop-aarch64-unknown-linux-gnu.tar.gz")) {
-            updaterAssets["aarch64-unknown-linux-gnu"] = "navop-aarch64-unknown-linux-gnu.tar.gz";
-          }
 
           function checksumFor(fileName) {
             const sha256 = checksums.get(fileName);
@@ -228,38 +223,24 @@ jobs:
             const publicTargets = [
               ["macos-arm64", "aarch64-apple-darwin"],
               ["macos-x64", "x86_64-apple-darwin"],
-              ["linux-x64-portable", "x86_64-unknown-linux-gnu"],
-              ["linux-arm64-portable", "aarch64-unknown-linux-gnu"],
-              ["linux-x64", "x86_64-unknown-linux-gnu"],
-              ["linux-arm64", "aarch64-unknown-linux-gnu"],
               ["windows-x64", "x86_64-pc-windows-msvc"],
-              ["win32", "i686-pc-windows-msvc"],
             ];
             const publicTarget = publicTargets.find(([label]) => fileName.includes(`-${label}.`) || fileName.includes(`-${label}-portable.`));
             if (publicTarget) return fileName.includes("-portable.") ? `${publicTarget[1]}-portable` : publicTarget[1];
             const knownTargets = [
               "aarch64-apple-darwin",
               "x86_64-apple-darwin",
-              "x86_64-unknown-linux-gnu",
-              "aarch64-unknown-linux-gnu",
               "x86_64-pc-windows-msvc",
-              "i686-pc-windows-msvc",
             ];
             const target = knownTargets.find((candidate) => fileName.includes(candidate));
             if (target) return fileName.includes("-portable.") ? `${target}-portable` : target;
-            if (/_(?:[^_]+)_amd64\.(?:deb|AppImage)$/.test(fileName) || /\.x86_64\.rpm$/.test(fileName)) {
-              return "x86_64-unknown-linux-gnu";
-            }
             return "universal";
           }
 
           const publicUpdaterAlternatives = new Map([
             ["navop-aarch64-apple-darwin.tar.gz", `navop-${version}-macos-arm64.tar.gz`],
             ["navop-x86_64-apple-darwin.tar.gz", `navop-${version}-macos-x64.tar.gz`],
-            ["navop-x86_64-unknown-linux-gnu.tar.gz", `navop-${version}-linux-x64.tar.gz`],
-            ["navop-aarch64-unknown-linux-gnu.tar.gz", `navop-${version}-linux-arm64.tar.gz`],
             ["navop-x86_64-pc-windows-msvc.zip", `navop-${version}-windows-x64.zip`],
-            ["navop-i686-pc-windows-msvc.zip", `navop-${version}-win32.zip`],
           ]);
           const availableFiles = new Set(fs.readdirSync("artifacts"));
           const packageFiles = [...availableFiles]

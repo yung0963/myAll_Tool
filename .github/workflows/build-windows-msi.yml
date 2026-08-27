@@ -7,14 +7,6 @@ on:
         description: "Installer version to build, for example 0.8.8"
         required: true
         type: string
-      architecture:
-        description: "Windows architecture"
-        required: true
-        type: choice
-        default: x64
-        options:
-          - x64
-          - x86
 
 permissions:
   contents: read
@@ -26,9 +18,9 @@ env:
   RUSTC_WRAPPER: sccache
   SCCACHE_GHA_ENABLED: "true"
   SCCACHE_IDLE_TIMEOUT: "7200"
-  WINDOWS_TARGET: ${{ inputs.architecture == 'x86' && 'i686-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
-  WINDOWS_WIX_ARCH: ${{ inputs.architecture == 'x86' && 'x86' || 'x64' }}
-  WINDOWS_LABEL: ${{ inputs.architecture == 'x86' && 'win32' || 'windows-x64' }}
+  WINDOWS_TARGET: x86_64-pc-windows-msvc
+  WINDOWS_WIX_ARCH: x64
+  WINDOWS_LABEL: windows-x64
 
 jobs:
   build:
@@ -213,7 +205,7 @@ jobs:
       - name: Upload Windows MSI
         uses: actions/upload-artifact@v4
         with:
-          name: navop-windows-${{ inputs.architecture }}-${{ inputs.version }}
+          name: navop-windows-x64-${{ inputs.version }}
           path: |
             ${{ env.WINDOWS_BASENAME }}.zip
             ${{ env.WINDOWS_BASENAME }}-portable.zip

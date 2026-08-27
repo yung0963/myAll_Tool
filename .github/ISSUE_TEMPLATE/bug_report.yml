@@ -42,10 +42,6 @@ body:
         - macOS - Apple Silicon
         - macOS - Intel
         - Windows - x86_64
-        - Windows - x86 (32-bit)
-        - Linux - x86_64
-        - Linux - ARM64
-        - 其他 / Other
     validations:
       required: true
 
@@ -53,8 +49,8 @@ body:
     id: environment
     attributes:
       label: 系统与安装信息 / System and installation details
-      description: 请填写系统版本和安装包类型；Linux 用户请补充桌面环境与 Wayland/X11。Include OS version and package type; on Linux, also include the desktop environment and Wayland/X11.
-      placeholder: "例如 / e.g. Windows 11 24H2, MSI；Ubuntu 24.04, GNOME, Wayland, AppImage"
+      description: 请填写系统版本、CPU 架构和安装包类型。Include the OS version, CPU architecture, and package type.
+      placeholder: "例如 / e.g. Windows 11 24H2, x64, MSI；macOS 15, Apple Silicon, DMG"
     validations:
       required: true
 
