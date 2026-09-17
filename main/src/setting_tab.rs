@@ -313,6 +313,7 @@ pub fn init_settings(cx: &mut App) {
         settings.sql_auto_save_interval,
     ));
     settings.apply(cx);
+    ftp_view::set_locale(effective_locale_for_setting(&settings.locale));
     load_custom_fonts(&settings.custom_fonts, cx);
     init_tracing(&settings);
     let http_client = build_app_http_client(&settings.global_proxy).expect("HTTP 客户端初始化失败");
@@ -506,6 +507,7 @@ impl SettingsPanel {
                                         let effective_locale =
                                             effective_locale_for_setting(&locale);
                                         gpui_component::set_locale(effective_locale);
+                                        ftp_view::set_locale(effective_locale);
                                         notes::set_markdown_editor_locale(effective_locale, cx);
                                         AppSettings::update_and_save(cx, |settings| {
                                             settings.locale = locale;

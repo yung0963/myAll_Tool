@@ -402,6 +402,10 @@ fn connection_endpoint(connection: &StoredConnection) -> Option<String> {
             .to_ssh_params()
             .ok()
             .map(|params| user_host_port(&params.username, &params.host, params.port)),
+        ConnectionType::Ftp => connection
+            .to_ftp_params()
+            .ok()
+            .map(|params| user_host_port(&params.username, &params.host, params.port)),
         ConnectionType::Redis => connection
             .to_redis_params()
             .ok()

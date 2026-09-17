@@ -101,6 +101,11 @@ fn connection_capabilities(connection: &StoredConnection) -> Vec<ResourceCapabil
             ResourceCapability::ReadFile,
             ResourceCapability::WriteFile,
         ],
+        ConnectionType::Ftp => vec![
+            ResourceCapability::List,
+            ResourceCapability::ReadFile,
+            ResourceCapability::WriteFile,
+        ],
         ConnectionType::Redis => vec![ResourceCapability::Execute],
         ConnectionType::MongoDB => vec![ResourceCapability::Query, ResourceCapability::Execute],
         ConnectionType::Serial => Vec::new(),
@@ -177,6 +182,7 @@ fn connection_kind(connection: &StoredConnection) -> ResourceKind {
     match connection.connection_type {
         ConnectionType::Database => database_kind(connection),
         ConnectionType::SshSftp => ResourceKind::Ssh,
+        ConnectionType::Ftp => ResourceKind::Other("ftp".into()),
         ConnectionType::Redis => ResourceKind::Redis,
         ConnectionType::MongoDB => ResourceKind::Mongo,
         ConnectionType::Serial => ResourceKind::Terminal,

@@ -89,6 +89,7 @@ fn copy_action_presentation(action: ConnectionCopyAction) -> (String, IconName) 
         ConnectionCopyAction::Name => label("copy_connection_name", IconName::Copy),
         ConnectionCopyAction::DatabaseAddress => label("copy_database_target", IconName::Network),
         ConnectionCopyAction::SshTarget => label("copy_ssh_target", IconName::Network),
+        ConnectionCopyAction::FtpAddress => label("copy_ftp_target", IconName::Network),
         ConnectionCopyAction::RedisAddress => label("copy_redis_target", IconName::Network),
         ConnectionCopyAction::MongoDbAddress => label("copy_mongodb_target", IconName::Network),
         ConnectionCopyAction::RemoteDesktopAddress => {
@@ -122,7 +123,7 @@ fn label(key: &str, icon: IconName) -> (String, IconName) {
 #[cfg(test)]
 mod tests {
     use gpui::{AppContext as _, ClickEvent, EmptyView, TestAppContext, VisualTestContext};
-    use gpui_component::{Root, Theme, WindowExt as _};
+    use gpui_component::{Root, Theme};
     use one_core::storage::{SshAuthMethod, SshParams};
 
     use super::*;

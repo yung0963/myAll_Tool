@@ -1,6 +1,72 @@
 use super::*;
 
 #[test]
+fn late_history_matches_do_not_restore_prompt_after_tab_or_retyping() {
+    let mut state = HistoryPromptState::from_input("out_");
+    let revision = state.query_revision();
+    state.dismiss();
+    state.append_text("out_");
+    assert!(!state.apply_query_matches(revision, vec!["out_file".into()]));
+    assert!(state.matches().is_empty());
+    let revision = state.query_revision();
+    assert!(state.apply_query_matches(revision, vec!["out_file".into()]));
+    assert_eq!(state.matches(), &["out_file"]);
+    state.append_text("x");
+    assert!(!state.apply_query_matches(revision, vec!["out_file".into()]));
+}
+
+#[test]
+fn terminal_echo_does_not_repeat_history_database_queries() {
+    let source = include_str!("../terminal_events.rs");
+    let wakeup = source
+        .split("TerminalModelEvent::Wakeup => {")
+        .nth(1)
+        .unwrap()
+        .split("TerminalModelEvent::HostKeyVerificationRequired")
+        .next()
+        .unwrap();
+    assert!(!wakeup.contains("refresh_history_prompt_matches"));
+}
+
+#[test]
+fn history_query_results_are_rejected_after_hiding_or_changing_search_mode() {
+    let mut state = HistoryPromptState::from_input("out_");
+    let revision = state.query_revision();
+    state.hide_dropdown();
+    state.show_dropdown();
+    assert!(!state.apply_query_matches(revision, vec!["out_file".into()]));
+    let revision = state.query_revision();
+    state.enter_search();
+    assert!(!state.apply_query_matches(revision, vec!["out_file".into()]));
+    let revision = state.query_revision();
+    state.append_text("out_");
+    assert!(!state.apply_query_matches(revision, vec!["out_file".into()]));
+}
+
+#[test]
+fn inline_history_queries_run_on_background_executor() {
+    let source = include_str!("../history_query.rs");
+    let refresh = source
+        .split("pub(super) fn refresh_history_prompt_matches")
+        .nth(1)
+        .unwrap()
+        .split("pub(super) fn current_cd_completion_query")
+        .next()
+        .unwrap();
+    let background = refresh
+        .split("cx.background_spawn(async move {")
+        .nth(1)
+        .unwrap()
+        .split("self.history_query_task =")
+        .next()
+        .unwrap();
+    assert!(background.contains("snapshot.history_suggestions"));
+    assert!(background.contains("snapshot.history_search_results"));
+    assert!(!refresh.contains("terminal.history_suggestions"));
+    assert!(!refresh.contains("terminal.history_search_results"));
+}
+
+#[test]
 fn history_prompt_invalidates_multiline_paste() {
     let mut state = HistoryPromptState::from_input("git");
 

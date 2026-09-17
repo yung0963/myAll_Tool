@@ -33,6 +33,7 @@ pub struct HistoryPromptState {
     dropdown_visible: bool,
     matches: Vec<String>,
     selected: Option<usize>,
+    query_revision: u64,
 }
 
 impl HistoryPromptState {
@@ -46,6 +47,7 @@ impl HistoryPromptState {
             dropdown_visible: true,
             matches: Vec::new(),
             selected: None,
+            query_revision: 0,
         }
     }
 
@@ -89,6 +91,7 @@ impl HistoryPromptState {
     }
 
     pub fn dismiss(&mut self) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         self.mode = HistoryPromptMode::InlineSuggest;
         self.input.clear();
         self.search_query.clear();
@@ -100,6 +103,7 @@ impl HistoryPromptState {
     }
 
     pub fn dismiss_matches(&mut self) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         self.dropdown_visible = false;
         self.matches.clear();
         self.selected = None;
@@ -112,6 +116,7 @@ impl HistoryPromptState {
 
     /// 隐藏下拉但保留跟踪状态和当前 input。
     pub fn hide_dropdown(&mut self) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         if self.tracking_state == TrackingState::Active {
             self.dropdown_visible = false;
             self.selected = None;
@@ -133,6 +138,7 @@ impl HistoryPromptState {
 
     /// 兼容旧调用：保留旧 input，并恢复显示状态。
     pub fn resume_with_input(&mut self, input: String) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         self.tracking_state = TrackingState::Active;
         self.input = input;
         self.dropdown_visible = !self.input.is_empty();
@@ -141,6 +147,7 @@ impl HistoryPromptState {
     }
 
     pub fn set_input(&mut self, input: String) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         self.mode = HistoryPromptMode::InlineSuggest;
         self.input = input;
         self.search_query.clear();
@@ -152,6 +159,7 @@ impl HistoryPromptState {
     }
 
     pub fn enter_search(&mut self) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         if self.tracking_state != TrackingState::Active {
             return;
         }
@@ -164,6 +172,7 @@ impl HistoryPromptState {
     }
 
     pub fn exit_search(&mut self) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         if self.mode != HistoryPromptMode::Search {
             return;
         }
@@ -177,6 +186,7 @@ impl HistoryPromptState {
     }
 
     pub fn append_text(&mut self, text: &str) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         if self.tracking_state == TrackingState::Dismissed {
             self.tracking_state = TrackingState::Active;
         }
@@ -190,6 +200,7 @@ impl HistoryPromptState {
     }
 
     pub fn backspace(&mut self) {
+        self.query_revision = self.query_revision.wrapping_add(1);
         if self.tracking_state != TrackingState::Active {
             return;
         }
@@ -243,6 +254,19 @@ impl HistoryPromptState {
         }
     }
 
+    pub fn query_revision(&self) -> u64 {
+        self.query_revision
+    }
+
+    /// A repeated query string after Tab/dismissal is still a different request.
+    pub fn apply_query_matches(&mut self, revision: u64, matches: Vec<String>) -> bool {
+        if revision != self.query_revision || !self.is_active() || !self.dropdown_visible {
+            return false;
+        }
+        self.set_matches(matches);
+        true
+    }
+
     pub fn selected_index(&self) -> Option<usize> {
         self.selected
     }
@@ -273,6 +297,7 @@ impl HistoryPromptState {
                         return None;
                     }
                     let suffix = suffix.to_string();
+                    self.query_revision = self.query_revision.wrapping_add(1);
                     self.input = candidate;
                     self.dropdown_visible = false;
                     self.matches.clear();
@@ -282,6 +307,7 @@ impl HistoryPromptState {
                 None
             }
             HistoryPromptMode::Search => {
+                self.query_revision = self.query_revision.wrapping_add(1);
                 self.input = candidate.clone();
                 self.search_query.clear();
                 self.search_base_input.clear();
@@ -328,6 +354,7 @@ impl HistoryPromptState {
 
         let word = &suffix[..word_end];
         let had_explicit_selection = self.selected.is_some();
+        self.query_revision = self.query_revision.wrapping_add(1);
         self.input.push_str(word);
         self.matches.retain(|candidate| {
             candidate

@@ -20,35 +20,38 @@ pub(crate) fn build_connection_open_strategy(
 ) -> Box<dyn ConnectionOpenStrategy> {
     match connection.connection_type {
         ConnectionType::SshSftp => Box::new(SshOpenStrategy { connection }),
+        ConnectionType::Ftp => Box::new(FtpOpenStrategy { connection }),
         ConnectionType::Database => Box::new(DatabaseOpenStrategy {
             connection,
             workspace,
         }),
-        ConnectionType::Redis => Box::new(RedisOpenStrategy {
-            connection,
-            workspace,
-        }),
-        ConnectionType::MongoDB => Box::new(MongoOpenStrategy {
-            connection,
-            workspace,
-        }),
+        ConnectionType::Redis | ConnectionType::MongoDB => Box::new(NoopOpenStrategy),
         ConnectionType::Serial => Box::new(SerialOpenStrategy { connection }),
         ConnectionType::Telnet => Box::new(TelnetOpenStrategy { connection }),
         ConnectionType::PortForwarding => Box::new(PortForwardingOpenStrategy { connection }),
-        ConnectionType::Rdp => Box::new(RemoteDesktopOpenStrategy {
-            connection,
-            protocol: RemoteDesktopProtocol::Rdp,
-        }),
-        ConnectionType::Vnc => Box::new(RemoteDesktopOpenStrategy {
-            connection,
-            protocol: RemoteDesktopProtocol::Vnc,
-        }),
+        ConnectionType::Rdp | ConnectionType::Vnc => Box::new(NoopOpenStrategy),
         _ => Box::new(NoopOpenStrategy),
     }
 }
 
 struct SshOpenStrategy {
     connection: StoredConnection,
+}
+
+struct FtpOpenStrategy {
+    connection: StoredConnection,
+}
+
+impl ConnectionOpenStrategy for FtpOpenStrategy {
+    fn open(
+        self: Box<Self>,
+        home: &mut HomePage,
+        mode: TabOpenMode,
+        window: &mut Window,
+        cx: &mut Context<HomePage>,
+    ) {
+        home.open_ftp_view_with_mode(self.connection, mode, window, cx);
+    }
 }
 
 impl ConnectionOpenStrategy for SshOpenStrategy {
@@ -114,6 +117,7 @@ impl extension_runtime::database_driver_install::DatabaseDriverConnectionOpener 
     }
 }
 
+#[allow(dead_code)]
 struct RedisOpenStrategy {
     connection: StoredConnection,
     workspace: Option<Workspace>,
@@ -161,11 +165,13 @@ impl ConnectionOpenStrategy for RedisOpenStrategy {
     }
 }
 
+#[allow(dead_code)]
 struct MongoOpenStrategy {
     connection: StoredConnection,
     workspace: Option<Workspace>,
 }
 
+#[allow(dead_code)]
 fn mongodb_driver_id(connection: &StoredConnection) -> String {
     connection
         .to_mongodb_params()
@@ -254,6 +260,7 @@ impl ConnectionOpenStrategy for PortForwardingOpenStrategy {
     }
 }
 
+#[allow(dead_code)]
 struct RemoteDesktopOpenStrategy {
     connection: StoredConnection,
     protocol: RemoteDesktopProtocol,

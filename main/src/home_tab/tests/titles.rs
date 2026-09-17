@@ -152,6 +152,7 @@ fn screenshot_safe_feature_replaces_all_home_connection_info() {
             "user@localhost:5432/example",
         ),
         (ConnectionType::SshSftp, "Local SSH", "user@localhost:22"),
+        (ConnectionType::Ftp, "Local FTP", "user@localhost:21"),
         (ConnectionType::Redis, "Local Redis", "localhost:6379/0"),
         (ConnectionType::MongoDB, "Local MongoDB", "localhost:27017"),
         (ConnectionType::Serial, "Local Serial", "COM1 (115200, 8N1)"),

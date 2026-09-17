@@ -38,12 +38,13 @@ impl TerminalView {
     }
 
     pub(super) fn refresh_history_prompt_matches(&mut self, cx: &mut Context<Self>) {
+        self.history_query_task.take();
         if !self.history_prompt_enabled(cx) {
             self.hide_history_prompt_dropdown();
             return;
         }
 
-        if !self.history_prompt.is_active() {
+        if !self.history_prompt.is_active() || !self.history_prompt.dropdown_visible() {
             self.history_prompt.set_matches(Vec::new());
             return;
         }
@@ -54,25 +55,39 @@ impl TerminalView {
         }
 
         let terminal = self.terminal.read(cx);
-        let matches = match self.history_prompt.mode() {
-            HistoryPromptMode::InlineSuggest => terminal
-                .history_suggestions(self.history_prompt.query_input(), HISTORY_SUGGESTION_LIMIT),
-            HistoryPromptMode::Search => terminal.history_search_results(
-                self.history_prompt.query_input(),
-                HISTORY_SUGGESTION_LIMIT,
-            ),
-        };
-        let first_match = matches.first().cloned().unwrap_or_default();
-        self.history_prompt.set_matches(matches);
-        tracing::debug!(
-            target: "terminal.history_prompt",
-            reason = "refresh_matches",
-            mode = ?self.history_prompt.mode(),
-            query = %self.history_prompt.query_input(),
-            matches_len = self.history_prompt.matches().len(),
-            first_match = %first_match,
-            "history prompt refreshed"
-        );
+        let snapshot = terminal.history_query_snapshot();
+        let session = terminal.ssh_session_manager().cloned();
+        let query = self.history_prompt.query_input().to_string();
+        let mode = self.history_prompt.mode();
+        let revision = self.history_prompt.query_revision();
+        let task = cx.background_spawn(async move {
+            match mode {
+                HistoryPromptMode::InlineSuggest => {
+                    snapshot.history_suggestions(&query, HISTORY_SUGGESTION_LIMIT)
+                }
+                HistoryPromptMode::Search => {
+                    snapshot.history_search_results(&query, HISTORY_SUGGESTION_LIMIT)
+                }
+            }
+        });
+        self.history_query_task = Some(cx.spawn(async move |this, cx| {
+            let matches = task.await;
+            let _ = this.update(cx, |this, cx| {
+                this.history_query_task = None;
+                if !this.history_prompt_enabled(cx) || !this.accepts_live_terminal_input(cx) {
+                    return;
+                }
+                let current_session = this.terminal.read(cx).ssh_session_manager();
+                let same_session = match (session.as_ref(), current_session) {
+                    (Some(previous), Some(current)) => Arc::ptr_eq(previous, current),
+                    (None, None) => true,
+                    _ => false,
+                };
+                if same_session && this.history_prompt.apply_query_matches(revision, matches) {
+                    cx.notify();
+                }
+            });
+        }));
     }
 
     pub(super) fn current_cd_completion_query(&self, cx: &App) -> Option<CdCompletionQuery> {
@@ -194,7 +209,9 @@ impl TerminalView {
                             );
                         }
 
-                        if let Some(current_query) = this.current_cd_completion_query(cx) {
+                        if let Some(current_query) = this.current_cd_completion_query(cx).filter(|_| {
+                            this.history_prompt.is_active() && this.history_prompt.dropdown_visible()
+                        }) {
                             if current_query.parent_dir == parent_dir {
                                 if let Some(directory_names) =
                                     this.cd_completion_cache.get(&parent_dir)

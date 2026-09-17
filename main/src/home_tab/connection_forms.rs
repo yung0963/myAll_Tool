@@ -166,6 +166,40 @@ impl HomePage {
         );
     }
 
+    pub(crate) fn show_ftp_form(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.editing_connection_id.is_none() && !self.is_master_key_ready_for_new_connection() {
+            return;
+        }
+
+        let editing_conn = self.editing_connection_id.and_then(|id| {
+            self.connections
+                .iter()
+                .find(|c| c.id == Some(id) && c.connection_type == ConnectionType::Ftp)
+                .cloned()
+        });
+
+        let config = FtpFormWindowConfig {
+            editing_connection: editing_conn,
+            initial_connection: None,
+            on_saved: None,
+            workspaces: self.workspaces.clone(),
+            teams: get_cached_team_options(cx),
+        };
+
+        self.editing_connection_id = None;
+
+        let title = Self::editing_title_or_default(
+            rust_i18n::locale().as_ref(),
+            config.editing_connection.as_ref(),
+            ftp_view::form_title(config.editing_connection.is_some()),
+        );
+        open_popup_window(
+            PopupWindowOptions::new(title).size(700.0, 650.0),
+            move |window, cx| cx.new(|cx| FtpFormWindow::new(config, window, cx)),
+            cx,
+        );
+    }
+
     pub(crate) fn show_redis_form(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
         if self.editing_connection_id.is_none() && !self.is_master_key_ready_for_new_connection() {
             return;

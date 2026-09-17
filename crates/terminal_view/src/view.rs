@@ -269,6 +269,7 @@ pub struct TerminalView {
     last_connection_status: Option<one_core::tab_container::TabConnectionStatus>,
     /// InlineSuggest 防抖任务（30ms 延迟刷新建议）
     suggestion_debounce: Option<Task<()>>,
+    history_query_task: Option<Task<()>>,
     /// 当前 pane 是否正在等待用户选择录制文件保存目录。
     recording_path_prompt_pending: bool,
     /// 当前 pane 最近一次录制控制错误；在 command bar 中直接展示。

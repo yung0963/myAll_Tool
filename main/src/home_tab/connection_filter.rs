@@ -55,6 +55,26 @@ pub(crate) fn connection_matches_query(conn: &StoredConnection, query: &str) -> 
                 }
             }
         }
+        ConnectionType::Ftp => {
+            if let Ok(params) = conn.to_ftp_params() {
+                if params.host.to_lowercase().contains(&query) {
+                    return true;
+                }
+                if params.port.to_string().contains(&query) {
+                    return true;
+                }
+                if params.username.to_lowercase().contains(&query) {
+                    return true;
+                }
+                if params.initial_directory.to_lowercase().contains(&query) {
+                    return true;
+                }
+                let conn_str = format!("{}@{}:{}", params.username, params.host, params.port);
+                if conn_str.to_lowercase().contains(&query) {
+                    return true;
+                }
+            }
+        }
         ConnectionType::Telnet => {
             if let Ok(params) = conn.to_telnet_params() {
                 if params.host.to_lowercase().contains(&query) {

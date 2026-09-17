@@ -7,6 +7,7 @@ use crate::setting_tab::{AppSettings, DatabaseOpenMode, SettingsPanel};
 #[cfg(feature = "api-testing")]
 use api_tools::ApiTestView;
 use db_view::database_tab::DatabaseTabView;
+use ftp_view::FtpView;
 use gpui::{App, AppContext, Context, Entity, Focusable, Window};
 use gpui_component::{WindowExt, notification::Notification};
 use json_view::JsonFormatterView;
@@ -1177,6 +1178,52 @@ impl HomePage {
         });
     }
 
+    pub(crate) fn open_ftp_view(
+        &mut self,
+        conn: StoredConnection,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(conn) = resolve_connection_credentials(&conn, window, cx) else {
+            return;
+        };
+        self.open_ftp_view_with_mode(conn, TabOpenMode::Activate, window, cx);
+    }
+
+    pub(crate) fn open_ftp_view_with_mode(
+        &mut self,
+        conn: StoredConnection,
+        mode: TabOpenMode,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let conn_id = conn.id.unwrap_or(0);
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0);
+        let tab_id = format!("ftp-{conn_id}-{timestamp}");
+        let prefix = format!("ftp-{conn_id}-");
+        let tab_container = self.active_tab_container(cx);
+        let existing_count = tab_container
+            .read(cx)
+            .tabs()
+            .iter()
+            .filter(|tab| tab.id().starts_with(&prefix))
+            .count();
+        let base_title = conn.name.clone();
+        let tab_index = self
+            .next_available_tab_index(&base_title, cx)
+            .or_else(|| (existing_count > 0).then_some(existing_count));
+        let ftp_view = cx.new(|cx| FtpView::new_with_index(conn, tab_index, window, cx));
+        let tab = TabItem::new(tab_id.clone(), "ftp", ftp_view);
+        window.defer(cx, move |window, cx| {
+            tab_container.update(cx, |tabs, cx| {
+                tabs.add_tab_with_mode(tab, mode, window, cx);
+            });
+        });
+    }
+
     pub(crate) fn open_remote_desktop_with_mode(
         &mut self,
         conn: StoredConnection,
@@ -1236,6 +1283,7 @@ impl HomePage {
         });
     }
 
+    #[allow(dead_code)]
     pub(crate) fn open_redis_tab_with_mode(
         &mut self,
         conn: StoredConnection,
@@ -1282,6 +1330,7 @@ impl HomePage {
         });
     }
 
+    #[allow(dead_code)]
     pub(crate) fn open_mongodb_tab_with_mode(
         &mut self,
         conn: StoredConnection,

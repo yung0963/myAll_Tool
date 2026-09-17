@@ -253,6 +253,7 @@ impl TerminalView {
             local_command_running: false,
             last_connection_status: None,
             suggestion_debounce: None,
+            history_query_task: None,
             recording_path_prompt_pending: false,
             recording_control_error: None,
             recording_ticker: None,

@@ -11,6 +11,10 @@ pub(super) fn card_connection_info(conn: &StoredConnection) -> Option<String> {
             .to_ssh_params()
             .ok()
             .map(|params| format!("{}@{}:{}", params.username, params.host, params.port)),
+        ConnectionType::Ftp => conn
+            .to_ftp_params()
+            .ok()
+            .map(|params| format!("{}@{}:{}", params.username, params.host, params.port)),
         ConnectionType::Redis => conn.to_redis_params().ok().map(redis_connection_info),
         ConnectionType::MongoDB => conn.to_mongodb_params().ok().map(mongodb_connection_info),
         ConnectionType::Serial => conn.to_serial_params().ok().map(serial_connection_info),
@@ -36,6 +40,7 @@ pub(super) fn screenshot_safe_connection_info(
     match connection_type {
         ConnectionType::Database => Some("user@localhost:5432/example"),
         ConnectionType::SshSftp => Some("user@localhost:22"),
+        ConnectionType::Ftp => Some("user@localhost:21"),
         ConnectionType::Redis => Some("localhost:6379/0"),
         ConnectionType::MongoDB => Some("localhost:27017"),
         ConnectionType::Serial => Some("COM1 (115200, 8N1)"),
@@ -55,6 +60,7 @@ pub(super) fn connection_display_name(conn: &StoredConnection) -> String {
     match conn.connection_type {
         ConnectionType::Database => "Local Database",
         ConnectionType::SshSftp => "Local SSH",
+        ConnectionType::Ftp => "Local FTP",
         ConnectionType::Redis => "Local Redis",
         ConnectionType::MongoDB => "Local MongoDB",
         ConnectionType::Serial => "Local Serial",

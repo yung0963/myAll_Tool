@@ -691,6 +691,10 @@ Home:
     en: Open SFTP
     zh-CN: 打开 SFTP
     zh-HK: 打開 SFTP
+  open_ftp:
+    en: Open FTP
+    zh-CN: 打开 FTP
+    zh-HK: 打開 FTP
   open_connection:
     en: Open Connection
     zh-CN: 打开连接
@@ -1426,6 +1430,10 @@ Connection:
     en: Copy SSH Target
     zh-CN: 复制 SSH 地址
     zh-HK: 複製 SSH 位址
+  copy_ftp_target:
+    en: Copy FTP Address
+    zh-CN: 复制 FTP 地址
+    zh-HK: 複製 FTP 位址
   copy_telnet_target:
     en: Copy Telnet Address
     zh-CN: 复制 Telnet 地址
@@ -1600,6 +1608,38 @@ Connection:
       en: Default Directory
       zh-CN: 默认目录
       zh-HK: 預設目錄
+    initial_directory:
+      en: Initial Directory
+      zh-CN: 初始目录
+      zh-HK: 初始目錄
+    security:
+      en: Security
+      zh-CN: 安全模式
+      zh-HK: 安全模式
+    transfer_mode:
+      en: Transfer Mode
+      zh-CN: 传输模式
+      zh-HK: 傳輸模式
+    ftp_plain:
+      en: Plain FTP
+      zh-CN: 普通 FTP
+      zh-HK: 一般 FTP
+    ftp_explicit_tls:
+      en: Explicit TLS
+      zh-CN: 显式 TLS
+      zh-HK: 顯式 TLS
+    ftp_implicit_tls:
+      en: Implicit TLS
+      zh-CN: 隐式 TLS
+      zh-HK: 隱式 TLS
+    ftp_passive:
+      en: Passive
+      zh-CN: 被动模式
+      zh-HK: 被動模式
+    ftp_active:
+      en: Active
+      zh-CN: 主动模式
+      zh-HK: 主動模式
     mode:
       en: Mode
       zh-CN: 模式
@@ -1728,6 +1768,10 @@ Connection:
       en: SSH/SFTP
       zh-CN: SSH/SFTP
       zh-HK: SSH/SFTP
+    type_ftp:
+      en: FTP/FTPS
+      zh-CN: FTP/FTPS
+      zh-HK: FTP/FTPS
     type_redis:
       en: Redis
       zh-CN: Redis
@@ -1863,6 +1907,10 @@ NewConnection:
     en: Remote server terminal and file connection
     zh-CN: 远程服务器终端与文件连接
     zh-HK: 遠端伺服器終端與檔案連線
+  description_ftp:
+    en: FTP or FTPS file transfer connection
+    zh-CN: FTP 或 FTPS 文件传输连接
+    zh-HK: FTP 或 FTPS 檔案傳輸連線
   description_rdp:
     en: Remote Desktop Protocol connection
     zh-CN: 远程桌面协议连接

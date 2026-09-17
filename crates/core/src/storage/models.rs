@@ -50,6 +50,7 @@ pub enum ConnectionType {
     All,
     Database,
     SshSftp,
+    Ftp,
     Redis,
     MongoDB,
     Serial,
@@ -65,6 +66,7 @@ impl fmt::Display for ConnectionType {
             ConnectionType::All => "All",
             ConnectionType::Database => "Database",
             ConnectionType::SshSftp => "SshSftp",
+            ConnectionType::Ftp => "Ftp",
             ConnectionType::Redis => "Redis",
             ConnectionType::MongoDB => "MongoDB",
             ConnectionType::Serial => "Serial",
@@ -82,6 +84,7 @@ impl ConnectionType {
         vec![
             ConnectionType::All,
             ConnectionType::SshSftp,
+            ConnectionType::Ftp,
             ConnectionType::Database,
             ConnectionType::Redis,
             ConnectionType::MongoDB,
@@ -96,6 +99,7 @@ impl ConnectionType {
         match s {
             "Database" => ConnectionType::Database,
             "SshSftp" => ConnectionType::SshSftp,
+            "Ftp" => ConnectionType::Ftp,
             "Redis" => ConnectionType::Redis,
             "MongoDB" => ConnectionType::MongoDB,
             "Serial" => ConnectionType::Serial,
@@ -112,6 +116,7 @@ impl ConnectionType {
             ConnectionType::All => "All",
             ConnectionType::Database => "Database",
             ConnectionType::SshSftp => "SSH/SFTP",
+            ConnectionType::Ftp => "FTP/FTPS",
             ConnectionType::Redis => "Redis",
             ConnectionType::MongoDB => "MongoDB",
             ConnectionType::Serial => "Serial",
@@ -127,6 +132,7 @@ impl ConnectionType {
             ConnectionType::All => IconName::Server,
             ConnectionType::Database => IconName::Database,
             ConnectionType::SshSftp => IconName::TerminalColor,
+            ConnectionType::Ftp => IconName::FolderOpen,
             ConnectionType::Redis => IconName::Redis,
             ConnectionType::MongoDB => IconName::MongoDB,
             ConnectionType::Serial => IconName::SerialPort,
@@ -458,6 +464,68 @@ impl SshParams {
     /// 选择连接图标：手动指定优先，其次按探测到的操作系统 ID，未识别时默认 Linux 企鹅。
     pub fn os_icon(&self) -> IconName {
         ssh_os_icon(self.icon.as_deref().or(self.os_id.as_deref()))
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FtpSecurity {
+    #[default]
+    Plain,
+    ExplicitTls,
+    ImplicitTls,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FtpTransferMode {
+    #[default]
+    Passive,
+    Active,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FtpParams {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    #[serde(default)]
+    pub credential_reference: Option<CredentialReference>,
+    #[serde(default = "default_ftp_directory")]
+    pub initial_directory: String,
+    #[serde(default)]
+    pub security: FtpSecurity,
+    #[serde(default)]
+    pub transfer_mode: FtpTransferMode,
+    #[serde(default)]
+    pub accept_invalid_certs: bool,
+    #[serde(default = "default_ftp_timeout")]
+    pub connect_timeout: u64,
+}
+
+fn default_ftp_directory() -> String {
+    "/".to_string()
+}
+
+const fn default_ftp_timeout() -> u64 {
+    20
+}
+
+impl Default for FtpParams {
+    fn default() -> Self {
+        Self {
+            host: String::new(),
+            port: 21,
+            username: "anonymous".to_string(),
+            password: "anonymous@".to_string(),
+            credential_reference: None,
+            initial_directory: default_ftp_directory(),
+            security: FtpSecurity::Plain,
+            transfer_mode: FtpTransferMode::Passive,
+            accept_invalid_certs: false,
+            connect_timeout: default_ftp_timeout(),
+        }
     }
 }
 
@@ -1679,6 +1747,10 @@ fn default_ssh_name(name: String, params: &SshParams) -> String {
     trimmed_or_default(name, default_name)
 }
 
+fn default_ftp_name(name: String, params: &FtpParams) -> String {
+    trimmed_or_default(name, host_port_name(&params.host, params.port))
+}
+
 fn default_remote_desktop_name(name: String, params: &RemoteDesktopParams) -> String {
     trimmed_or_default(name, host_port_name(&params.host, params.port))
 }
@@ -1778,6 +1850,29 @@ impl StoredConnection {
         }
     }
 
+    pub fn new_ftp(name: String, params: FtpParams, workspace_id: Option<i64>) -> Self {
+        let name = default_ftp_name(name, &params);
+        Self {
+            id: None,
+            credential_revision: None,
+            name,
+            connection_type: ConnectionType::Ftp,
+            params: serde_json::to_string(&params).expect("FtpParams serialization must succeed"),
+            workspace_id,
+            selected_databases: None,
+            remark: None,
+            sync_enabled: true,
+            cloud_id: None,
+            last_synced_at: None,
+            last_used_at: None,
+            sort_order: None,
+            created_at: None,
+            updated_at: None,
+            team_id: None,
+            owner_id: None,
+        }
+    }
+
     pub fn new_remote_desktop(
         name: String,
         params: RemoteDesktopParams,
@@ -1855,6 +1950,10 @@ impl StoredConnection {
         let mut params: SshParams = serde_json::from_str(&self.params)?;
         params.sanitize_for_storage();
         Ok(params)
+    }
+
+    pub fn to_ftp_params(&self) -> Result<FtpParams, serde_json::Error> {
+        serde_json::from_str(&self.params)
     }
 
     pub fn to_remote_desktop_params(&self) -> Result<RemoteDesktopParams, serde_json::Error> {
@@ -2853,6 +2952,59 @@ mod serial_tests {
         assert_eq!(ConnectionType::from_str("Serial"), ConnectionType::Serial);
         assert_eq!(format!("{}", ConnectionType::Serial), "Serial");
         assert!(ConnectionType::all().contains(&ConnectionType::Serial));
+    }
+
+    #[test]
+    fn connection_type_ftp_methods_and_serialization_are_stable() {
+        assert_eq!(ConnectionType::Ftp.label(), "FTP/FTPS");
+        assert_eq!(ConnectionType::from_str("Ftp"), ConnectionType::Ftp);
+        assert_eq!(format!("{}", ConnectionType::Ftp), "Ftp");
+        assert!(ConnectionType::all().contains(&ConnectionType::Ftp));
+        assert_eq!(
+            serde_json::to_string(&ConnectionType::Ftp).unwrap(),
+            "\"Ftp\""
+        );
+        assert_eq!(
+            serde_json::from_str::<ConnectionType>("\"Ftp\"").unwrap(),
+            ConnectionType::Ftp
+        );
+    }
+
+    #[test]
+    fn stored_connection_ftp_roundtrip_preserves_defaults_and_credentials() {
+        let params = FtpParams {
+            host: "ftp.example.test".to_string(),
+            port: 2121,
+            username: "deploy".to_string(),
+            password: "secret".to_string(),
+            credential_reference: None,
+            initial_directory: "/uploads".to_string(),
+            security: FtpSecurity::ExplicitTls,
+            transfer_mode: FtpTransferMode::Active,
+            accept_invalid_certs: true,
+            connect_timeout: 45,
+        };
+        let connection = StoredConnection::new_ftp(String::new(), params.clone(), Some(42));
+
+        assert_eq!(connection.connection_type, ConnectionType::Ftp);
+        assert_eq!(connection.name, "ftp.example.test:2121");
+        assert_eq!(connection.workspace_id, Some(42));
+        assert_eq!(connection.to_ftp_params().unwrap(), params);
+    }
+
+    #[test]
+    fn ftp_params_deserialize_legacy_json_with_defaults() {
+        let params: FtpParams = serde_json::from_str(
+            r#"{"host":"ftp.example.test","port":21,"username":"anonymous","password":"anonymous@"}"#,
+        )
+        .unwrap();
+
+        assert_eq!(params.initial_directory, "/");
+        assert_eq!(params.security, FtpSecurity::Plain);
+        assert_eq!(params.transfer_mode, FtpTransferMode::Passive);
+        assert!(!params.accept_invalid_certs);
+        assert_eq!(params.connect_timeout, 20);
+        assert!(params.credential_reference.is_none());
     }
 
     #[test]

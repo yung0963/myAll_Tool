@@ -8,6 +8,7 @@ impl HomePage {
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let sftp_connection = conn.clone();
+        let ftp_connection = conn.clone();
         let duplicate_connection = conn.clone();
         let edit_connection = conn.clone();
         let delete_connection_id = conn.id;
@@ -35,6 +36,20 @@ impl HomePage {
                     .on_click(cx.listener(move |this, _, window, cx| {
                         cx.stop_propagation();
                         this.open_sftp_view(sftp_connection.clone(), window, cx);
+                    })),
+                )
+            })
+            .when(conn.connection_type == ConnectionType::Ftp, |this| {
+                this.child(
+                    IconButton::new(
+                        SharedString::from(format!("ftp-list-conn-{}", conn.id.unwrap_or(0))),
+                        ObjectIcon::new(IconName::FolderOpen),
+                    )
+                    .role(IconButtonRole::Compact)
+                    .tooltip(t!("Home.open_ftp"))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        cx.stop_propagation();
+                        this.open_ftp_view(ftp_connection.clone(), window, cx);
                     })),
                 )
             })

@@ -1,0 +1,301 @@
+_version: 2
+
+Common:
+  ok:
+    en: OK
+    zh-CN: 确定
+    zh-HK: 確定
+  cancel:
+    en: Cancel
+    zh-CN: 取消
+    zh-HK: 取消
+  previous:
+    en: Previous
+    zh-CN: 上一步
+    zh-HK: 上一步
+  save_and_continue:
+    en: Save and Continue
+    zh-CN: 保存并继续
+    zh-HK: 儲存並繼續
+  none:
+    en: None
+    zh-CN: 无
+    zh-HK: 無
+  refresh:
+    en: Refresh
+    zh-CN: 刷新
+    zh-HK: 重新整理
+
+Connection:
+  test:
+    en: Test
+    zh-CN: 测试
+    zh-HK: 測試
+  testing:
+    en: Testing...
+    zh-CN: 测试中...
+    zh-HK: 測試中...
+
+ConnectionForm:
+  cloud_sync:
+    en: Cloud Sync
+    zh-CN: 云端同步
+    zh-HK: 雲端同步
+  cloud_sync_desc:
+    en: Sync this connection across devices
+    zh-CN: 在多设备间同步此连接
+    zh-HK: 在多設備間同步此連線
+
+ConnectionForm:
+  cloud_sync:
+    en: Cloud Sync
+    zh-CN: 云端同步
+    zh-HK: 雲端同步
+  cloud_sync_desc:
+    en: Sync this connection across devices
+    zh-CN: 在多设备间同步此连接
+    zh-HK: 在多設備間同步此連線
+
+FTP:
+  new:
+    en: New FTP Connection
+    zh-CN: 新建 FTP 连接
+    zh-HK: 新建 FTP 連線
+  edit:
+    en: Edit FTP Connection
+    zh-CN: 编辑 FTP 连接
+    zh-HK: 編輯 FTP 連線
+  name:
+    en: Connection Name
+    zh-CN: 连接名称
+    zh-HK: 連線名稱
+  name_placeholder:
+    en: Enter connection name
+    zh-CN: 请输入连接名称
+    zh-HK: 請輸入連線名稱
+  host:
+    en: Host
+    zh-CN: 主机地址
+    zh-HK: 主機位址
+  host_placeholder:
+    en: "e.g. ftp.example.com"
+    zh-CN: "如 ftp.example.com"
+    zh-HK: "如 ftp.example.com"
+  port:
+    en: Port
+    zh-CN: 端口
+    zh-HK: 連接埠
+  port_placeholder:
+    en: "21"
+    zh-CN: "21"
+    zh-HK: "21"
+  username:
+    en: Username
+    zh-CN: 用户名
+    zh-HK: 使用者名稱
+  username_placeholder:
+    en: "anonymous"
+    zh-CN: "anonymous"
+    zh-HK: "anonymous"
+  password:
+    en: Password
+    zh-CN: 密码
+    zh-HK: 密碼
+  credential:
+    en: Keychain
+    zh-CN: 钥匙串
+    zh-HK: 鑰匙圈
+  password_placeholder:
+    en: Password or anonymous email
+    zh-CN: 密码或匿名登录邮箱
+    zh-HK: 密碼或匿名登入電郵
+  initial_directory:
+    en: Starting Directory
+    zh-CN: 起始目录
+    zh-HK: 起始目錄
+  initial_directory_placeholder:
+    en: "/"
+    zh-CN: "/"
+    zh-HK: "/"
+  security:
+    en: Security
+    zh-CN: 安全性
+    zh-HK: 安全性
+  plain:
+    en: Plain FTP
+    zh-CN: 普通 FTP
+    zh-HK: 一般 FTP
+  explicit_tls:
+    en: Explicit TLS (AUTH TLS)
+    zh-CN: 显式 TLS（AUTH TLS）
+    zh-HK: 顯式 TLS（AUTH TLS）
+  implicit_tls:
+    en: Implicit TLS
+    zh-CN: 隐式 TLS
+    zh-HK: 隱式 TLS
+  transfer_mode:
+    en: Transfer Mode
+    zh-CN: 传输模式
+    zh-HK: 傳輸模式
+  passive:
+    en: Passive
+    zh-CN: 被动模式
+    zh-HK: 被動模式
+  active:
+    en: Active
+    zh-CN: 主动模式
+    zh-HK: 主動模式
+  accept_invalid_certs:
+    en: Accept Invalid Certificates
+    zh-CN: 接受无效证书
+    zh-HK: 接受無效憑證
+  accept_invalid_certs_hint:
+    en: Allow self-signed or otherwise invalid TLS certificates.
+    zh-CN: 允许自签名或其他无效的 TLS 证书。
+    zh-HK: 允許自簽或其他無效的 TLS 憑證。
+  connect_timeout:
+    en: Connection Timeout (seconds)
+    zh-CN: 连接超时（秒）
+    zh-HK: 連線逾時（秒）
+  connect_timeout_placeholder:
+    en: "20"
+    zh-CN: "20"
+    zh-HK: "20"
+  workspace:
+    en: Workspace
+    zh-CN: 工作区
+    zh-HK: 工作區
+  remark:
+    en: Remark
+    zh-CN: 备注
+    zh-HK: 備註
+  remark_placeholder:
+    en: Enter remark
+    zh-CN: 请输入备注
+    zh-HK: 請輸入備註
+  validation_error:
+    en: Please enter a valid FTP host, port, username, directory, and timeout.
+    zh-CN: 请输入有效的 FTP 主机、端口、用户名、目录和超时时间。
+    zh-HK: 請輸入有效的 FTP 主機、連接埠、使用者名稱、目錄和逾時時間。
+  test_tcp:
+    en: Test TCP Port
+    zh-CN: 测试 TCP 端口
+    zh-HK: 測試 TCP 連接埠
+  test_tcp_success:
+    en: TCP port is reachable (this does not validate the FTP protocol or credentials)
+    zh-CN: TCP 端口可达（此测试不验证 FTP 协议或凭据）
+    zh-HK: TCP 連接埠可達（此測試不驗證 FTP 協定或憑據）
+  test_timeout:
+    en: FTP connection timed out
+    zh-CN: FTP 连接超时
+    zh-HK: FTP 連線逾時
+  save_while_testing:
+    en: Please wait for the FTP connection test to finish before saving.
+    zh-CN: 请等待 FTP 连接测试完成后再保存。
+    zh-HK: 請等待 FTP 連線測試完成後再儲存。
+  save_failed:
+    en: "Failed to save FTP connection: %{error}"
+    zh-CN: "保存 FTP 连接失败：%{error}"
+    zh-HK: "儲存 FTP 連線失敗：%{error}"
+  connection_section:
+    en: Connection
+    zh-CN: 连接
+    zh-HK: 連線
+  authentication_section:
+    en: Authentication
+    zh-CN: 身份验证
+    zh-HK: 驗證
+  transfer_section:
+    en: Transfer
+    zh-CN: 传输
+    zh-HK: 傳輸
+  advanced_section:
+    en: Advanced
+    zh-CN: 高级
+    zh-HK: 進階
+
+FtpView:
+  name:
+    en: Name
+    zh-CN: 名称
+    zh-HK: 名稱
+  size:
+    en: Size
+    zh-CN: 大小
+    zh-HK: 大小
+  modified:
+    en: Modified
+    zh-CN: 修改时间
+    zh-HK: 修改時間
+  local_files:
+    en: Local files
+    zh-CN: 本地文件
+    zh-HK: 本機檔案
+  remote_files:
+    en: Remote files
+    zh-CN: 远程文件
+    zh-HK: 遠端檔案
+  connected:
+    en: Connected
+    zh-CN: 已连接
+    zh-HK: 已連線
+  reconnect:
+    en: Connect
+    zh-CN: 连接
+    zh-HK: 連線
+  upload:
+    en: Upload
+    zh-CN: 上传
+    zh-HK: 上傳
+  download:
+    en: Download
+    zh-CN: 下载
+    zh-HK: 下載
+  new_folder:
+    en: New folder
+    zh-CN: 新建文件夹
+    zh-HK: 新增資料夾
+  rename:
+    en: Rename
+    zh-CN: 重命名
+    zh-HK: 重新命名
+  delete:
+    en: Delete
+    zh-CN: 删除
+    zh-HK: 刪除
+  delete_confirm:
+    en: "Delete %{name}?"
+    zh-CN: "确定删除 %{name}？"
+    zh-HK: "確定刪除 %{name}？"
+  parent:
+    en: Parent directory
+    zh-CN: 上级目录
+    zh-HK: 上層目錄
+  loading:
+    en: Loading…
+    zh-CN: 加载中…
+    zh-HK: 載入中…
+  empty:
+    en: This directory is empty
+    zh-CN: 此目录为空
+    zh-HK: 此目錄為空
+  not_connected:
+    en: Not connected
+    zh-CN: 未连接
+    zh-HK: 未連線
+  select_local:
+    en: Select a local file or folder first.
+    zh-CN: 请先选择本地文件或文件夹。
+    zh-HK: 請先選取本機檔案或資料夾。
+  select_remote:
+    en: Select a remote file or folder first.
+    zh-CN: 请先选择远程文件或文件夹。
+    zh-HK: 請先選取遠端檔案或資料夾。
+  invalid_name:
+    en: Enter a valid single file or folder name.
+    zh-CN: 请输入有效的单个文件或文件夹名称。
+    zh-HK: 請輸入有效的單一檔案或資料夾名稱。
+  local_refreshed:
+    en: Local directory refreshed
+    zh-CN: 本地目录已刷新
+    zh-HK: 本機目錄已重新整理

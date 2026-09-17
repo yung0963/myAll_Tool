@@ -45,7 +45,7 @@ members = [
     "tools/icon-audit",
     "tools/gpui-rdp-smoke",
     "tools/windows-rdp-probe",
-    "main", "crates/ssh", "crates/x11_forwarding", "crates/sftp", "crates/sftp_view", "crates/one_ui", "crates/redis-runtime", "crates/mongodb-runtime", "crates/redis_view", "crates/license_tool", "crates/mongodb_view", "crates/remote_file_editor", "crates/remote_image_preview"]
+    "main", "crates/ssh", "crates/x11_forwarding", "crates/sftp", "crates/ftp", "crates/ftp_view", "crates/sftp_view", "crates/one_ui", "crates/redis-runtime", "crates/mongodb-runtime", "crates/redis_view", "crates/license_tool", "crates/mongodb_view", "crates/remote_file_editor", "crates/remote_image_preview"]
 resolver = "2"
 
 [workspace.package]
@@ -121,6 +121,8 @@ one-ui = { path = "crates/one_ui" }
 ssh = { path = "crates/ssh" }
 x11_forwarding = { path = "crates/x11_forwarding" }
 sftp = { path = "crates/sftp" }
+ftp = { path = "crates/ftp" }
+ftp_view = { path = "crates/ftp_view" }
 terminal = { path = "crates/terminal" }
 terminal_view = { path = "crates/terminal_view" }
 workspace_explorer = { path = "crates/workspace_explorer" }
@@ -202,6 +204,7 @@ redis_client = { package = "redis", version = "0.27", features = ["tokio-comp", 
 # dsa feature enables verifying/offering the legacy ssh-dss host-key algorithm.
 russh = { version = "0.63.1", features = ["dsa"] }
 russh-sftp = "2.4.0"
+suppaftp = { version = "10.0.2", default-features = false, features = ["tokio", "tokio-async-native-tls", "deprecated"] }
 tokio-socks = "0.5"
 
 # Encryption

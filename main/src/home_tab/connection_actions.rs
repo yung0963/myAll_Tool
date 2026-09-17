@@ -40,6 +40,10 @@ impl HomePage {
                 self.editing_connection_id = Some(connection_id);
                 self.show_ssh_form(window, cx);
             }
+            ConnectionType::Ftp => {
+                self.editing_connection_id = Some(connection_id);
+                self.show_ftp_form(window, cx);
+            }
             ConnectionType::Redis => {
                 self.editing_connection_id = Some(connection_id);
                 self.show_redis_form(window, cx);

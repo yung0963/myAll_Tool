@@ -206,48 +206,11 @@ impl HomePage {
 
     fn render_legacy_user(
         &self,
-        collapsed: bool,
-        rail_item_size: Size,
-        cx: &mut Context<Self>,
+        _collapsed: bool,
+        _rail_item_size: Size,
+        _cx: &mut Context<Self>,
     ) -> AnyElement {
-        let user = self.current_user.as_ref();
-        let view = cx.entity();
-        v_flex()
-            .relative()
-            .w_full()
-            .mt_2()
-            .pt_2()
-            .border_t_1()
-            .border_color(cx.theme().border)
-            .when(collapsed, |footer| {
-                footer.items_center().child(
-                    IconButton::new("legacy-home-user", FunctionalIcon::new(IconName::User))
-                        .hit_size(rail_item_size)
-                        .glyph_size(IconSize::Medium)
-                        .tooltip(
-                            user.map(UserInfo::resolved_display_name)
-                                .unwrap_or_else(|| t!("Auth.login").to_string()),
-                        )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            if this.current_user.is_none() {
-                                this.show_login_dialog(window, cx);
-                            }
-                        })),
-                )
-            })
-            .when(!collapsed, |footer| {
-                footer.child(render_user_avatar(
-                    user,
-                    view,
-                    |this: &mut HomePage, window, cx| {
-                        if this.current_user.is_none() {
-                            this.show_login_dialog(window, cx);
-                        }
-                    },
-                    cx,
-                ))
-            })
-            .into_any_element()
+        div().into_any_element()
     }
 }
 

@@ -74,14 +74,11 @@ pub(super) fn sync_route(cx: &App) -> HomeSyncRoute {
 }
 
 pub(super) fn should_auto_onet_cloud_sync_for_settings(
-    settings: &AppSettings,
-    current_user_present: bool,
-    has_master_key: bool,
+    _settings: &AppSettings,
+    _current_user_present: bool,
+    _has_master_key: bool,
 ) -> bool {
-    settings.sync_enabled
-        && sync_route_for_provider(settings.sync_provider) == HomeSyncRoute::OnetCloud
-        && current_user_present
-        && has_master_key
+    false
 }
 
 pub(super) fn should_auto_onet_cloud_sync(cx: &App, current_user_present: bool) -> bool {
@@ -99,8 +96,8 @@ pub(super) fn should_show_team_key_menu_item(
     route == HomeSyncRoute::OnetCloud && cached_team_count > 0
 }
 
-pub(crate) fn should_show_team_management_entry(team_management_enabled: bool) -> bool {
-    team_management_enabled
+pub(crate) fn should_show_team_management_entry(_team_management_enabled: bool) -> bool {
+    false
 }
 
 #[cfg(test)]
@@ -108,7 +105,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn onet_cloud_auto_sync_requires_global_sync_to_be_enabled() {
+    fn removed_cloud_sync_never_runs_automatically() {
         let mut settings = AppSettings::default();
         settings.sync_provider = SyncProvider::OnetCloud;
         settings.sync_enabled = false;
@@ -118,7 +115,7 @@ mod tests {
         ));
 
         settings.sync_enabled = true;
-        assert!(should_auto_onet_cloud_sync_for_settings(
+        assert!(!should_auto_onet_cloud_sync_for_settings(
             &settings, true, true
         ));
     }

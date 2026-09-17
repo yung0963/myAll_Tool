@@ -33,6 +33,10 @@ impl HomePage {
                 .to_ssh_params()
                 .map(|params| format!("{}@{}:{}", params.username, params.host, params.port))
                 .unwrap_or_default(),
+            ConnectionType::Ftp => conn
+                .to_ftp_params()
+                .map(|params| format!("{}@{}:{}", params.username, params.host, params.port))
+                .unwrap_or_default(),
             ConnectionType::Redis => conn
                 .to_redis_params()
                 .map(|params| format!("{}:{}/{}", params.host, params.port, params.db_index))

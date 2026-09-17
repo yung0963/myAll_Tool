@@ -2,9 +2,9 @@ use anyhow::{Result, bail};
 
 use crate::storage::traits::Repository;
 use crate::storage::{
-    ConnectionType, CredentialRepository, DbConnectionConfig, MongoDBParams, ProxyConfig,
-    RedisParams, ReferencedCredentialFields, RemoteDesktopParams, SshAccountExpect, SshAuthMethod,
-    SshParams, StoredConnection, TelnetLoginStep, TelnetParams,
+    ConnectionType, CredentialRepository, DbConnectionConfig, FtpParams, MongoDBParams,
+    ProxyConfig, RedisParams, ReferencedCredentialFields, RemoteDesktopParams, SshAccountExpect,
+    SshAuthMethod, SshParams, StoredConnection, TelnetLoginStep, TelnetParams,
     resolve_credential_reference_strict,
 };
 
@@ -21,6 +21,9 @@ impl CredentialRepository {
             }
             ConnectionType::Database => {
                 serde_json::to_string(&self.resolve_database(connection.to_db_connection()?)?)?
+            }
+            ConnectionType::Ftp => {
+                serde_json::to_string(&self.resolve_ftp(connection.to_ftp_params()?)?)?
             }
             ConnectionType::Redis => {
                 serde_json::to_string(&self.resolve_redis(connection.to_redis_params()?)?)?
@@ -104,6 +107,26 @@ impl CredentialRepository {
             params.password = fields.password.unwrap_or_default();
         }
         self.resolve_optional_proxy(params.proxy.as_mut())?;
+        Ok(params)
+    }
+
+    pub fn resolve_ftp(&self, mut params: FtpParams) -> Result<FtpParams> {
+        let Some(reference) = params.credential_reference.as_ref() else {
+            return Ok(params);
+        };
+        let credential = self.resolve_reference_entry(reference)?;
+        let fields = resolve_credential_reference_strict(
+            ReferencedCredentialFields::new(
+                Some(params.username.clone()),
+                Some(params.password.clone()),
+                None,
+                None,
+            ),
+            reference,
+            credential.as_ref(),
+        )?;
+        params.username = fields.username.unwrap_or_default();
+        params.password = fields.password.unwrap_or_default();
         Ok(params)
     }
 

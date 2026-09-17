@@ -1,4 +1,4 @@
-use super::{diagnostics, internal_functions, mongo, redis, resource_pool};
+use super::{diagnostics, internal_functions, resource_pool};
 use gpui::App;
 use one_core::settings::ToolExposureToolsetSettings;
 use one_core::tab_container::TabOpenMode;
@@ -136,16 +136,6 @@ fn build_tool_registry_for_surface(
         } else {
             tracing::warn!("Public MCP database tools enabled before storage is initialized");
         }
-    }
-    if toolsets.redis {
-        runtime_registries.push(tool_runtime::ToolRegistry::new(redis::redis_tool_handlers(
-            cx,
-        )));
-    }
-    if toolsets.mongo {
-        runtime_registries.push(tool_runtime::ToolRegistry::new(mongo::mongo_tool_handlers(
-            cx,
-        )));
     }
     if !runtime_registries.is_empty() {
         let mut provider =

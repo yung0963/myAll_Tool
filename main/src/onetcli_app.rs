@@ -838,13 +838,8 @@ pub fn init(cx: &mut App) {
         cache.start_cleanup_task(cx);
     }
     terminal_view::init(cx);
-    redis_view::init(cx);
     crate::personal_sync_runtime::init(cx);
-    mongodb_view::init(cx);
-    #[cfg(not(all(feature = "builtin-redis", feature = "builtin-mongodb")))]
-    init_native_data_driver_factories(cx);
     crate::public_mcp_runtime::init(cx);
-    remote_desktop_view::init(cx);
     crate::home_tab::init(cx);
     cx.bind_keys(init_keybindings(cx));
     init_action_handlers(cx);
@@ -861,32 +856,12 @@ pub fn init(cx: &mut App) {
     cx.activate(true);
 }
 
-#[cfg(not(all(feature = "builtin-redis", feature = "builtin-mongodb")))]
-fn init_native_data_driver_factories(cx: &mut App) {
-    let Some(root) = extension_runtime::extension::extensions_root() else {
-        return;
-    };
-    let driver_root = root.join("database_drivers");
-    #[cfg(not(feature = "builtin-redis"))]
-    redis_view::init_with_factory(
-        cx,
-        redis_runtime::RedisConnectionFactory::from_installed_root(driver_root.clone()),
-    );
-    #[cfg(not(feature = "builtin-mongodb"))]
-    mongodb_view::init_with_factory(
-        cx,
-        mongodb_runtime::MongoConnectionFactory::from_installed_root(driver_root),
-    );
-}
-
 pub fn refresh_keybindings(cx: &mut App) {
     cx.bind_keys(refreshable_keybindings(cx));
     crate::home_tab::refresh_keybindings(cx);
     db_view::search_shortcut::refresh_keybindings(cx);
     db_view::sql_editor_view::refresh_keybindings(cx);
     terminal_view::refresh_keybindings(cx);
-    redis_view::refresh_keybindings(cx);
-    remote_desktop_view::refresh_keybindings(cx);
     one_ui::refresh_keybindings(cx);
     remote_file_editor::refresh_keybindings(cx);
     notes::refresh_keybindings(cx);
@@ -2473,9 +2448,10 @@ impl Render for OnetCliApp {
         let show_persistent_sidebar = self.home_page_style.uses_persistent_sidebar();
         let sidebar_expanded = self.connection_sidebar.read(cx).is_expanded();
         let floating_tree = if show_persistent_sidebar && sidebar_expanded {
-            Some(self.connection_sidebar.update(cx, |sidebar, cx| {
-                sidebar.render_floating_tree(window, cx)
-            }))
+            Some(
+                self.connection_sidebar
+                    .update(cx, |sidebar, cx| sidebar.render_floating_tree(window, cx)),
+            )
         } else {
             None
         };
@@ -2512,27 +2488,29 @@ impl Render for OnetCliApp {
                         layout.child(self.connection_sidebar.clone())
                     })
                     .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .h_full()
-                        .when(show_persistent_sidebar && sidebar_expanded, |this| {
-                            this.on_mouse_down(
-                                gpui::MouseButton::Left,
-                                cx.listener(|this, event: &gpui::MouseDownEvent, _window, cx| {
-                                    if !this.connection_sidebar.read(cx).is_expanded() {
-                                        return;
-                                    }
-                                    let layout = cx.theme().geometry.layout;
-                                    let in_terminal = event.position.x > layout.global_rail
-                                        && event.position.y > layout.tab_bar;
-                                    if in_terminal {
-                                        this.set_connection_sidebar_expanded(false, cx);
-                                    }
-                                }),
-                            )
-                        })
-                        .child(main_content),
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .h_full()
+                            .when(show_persistent_sidebar && sidebar_expanded, |this| {
+                                this.on_mouse_down(
+                                    gpui::MouseButton::Left,
+                                    cx.listener(
+                                        |this, event: &gpui::MouseDownEvent, _window, cx| {
+                                            if !this.connection_sidebar.read(cx).is_expanded() {
+                                                return;
+                                            }
+                                            let layout = cx.theme().geometry.layout;
+                                            let in_terminal = event.position.x > layout.global_rail
+                                                && event.position.y > layout.tab_bar;
+                                            if in_terminal {
+                                                this.set_connection_sidebar_expanded(false, cx);
+                                            }
+                                        },
+                                    ),
+                                )
+                            })
+                            .child(main_content),
                     )
             })
             .when(show_persistent_sidebar && sidebar_expanded, |this| {

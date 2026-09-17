@@ -89,6 +89,67 @@ pub use ssh::{
     JumpServerConnectConfig, ProxyConnectConfig, ProxyType, PtyConfig, SshAuth, SshConnectConfig,
 };
 
+/// Owned, sendable input for a history query, independent of the terminal entity.
+/// SQLite access happens only when a query method is executed.
+pub struct TerminalHistorySnapshot {
+    history_repository: Option<Arc<TerminalCommandHistoryRepository>>,
+    history_scope: Option<TerminalHistoryScope>,
+    history_user: Option<String>,
+    session_history: VecDeque<HistoryEntry>,
+    persisted_history: Vec<String>,
+    current_working_dir: Option<String>,
+}
+
+impl TerminalHistorySnapshot {
+    pub fn history_suggestions(&self, prefix: &str, limit: usize) -> Vec<String> {
+        let history_user = self.history_user.clone();
+        let db_matches = self
+            .history_repository
+            .as_ref()
+            .zip(self.history_scope.as_ref())
+            .and_then(|(repo, scope)| repo.suggestions(scope, prefix, limit).ok())
+            .unwrap_or_default();
+        let db_matches = normalize_history_matches(db_matches, history_user.as_deref(), limit);
+        let fallback = collect_history_suggestions_with_cwd(
+            &self.session_history,
+            &self.persisted_history,
+            prefix,
+            limit,
+            self.current_working_dir.as_deref(),
+        );
+        merge_history_matches(db_matches, fallback, limit)
+    }
+
+    pub fn history_search_results(&self, query: &str, limit: usize) -> Vec<String> {
+        let history_user = self.history_user.clone();
+        let db_matches = self
+            .history_repository
+            .as_ref()
+            .zip(self.history_scope.as_ref())
+            .and_then(|(repo, scope)| {
+                repo.list(
+                    scope,
+                    TerminalCommandHistorySort::Latest,
+                    (!query.trim().is_empty()).then_some(query),
+                    limit,
+                )
+                .ok()
+            })
+            .unwrap_or_default()
+            .into_iter()
+            .map(|item| item.command)
+            .collect();
+        let db_matches = normalize_history_matches(db_matches, history_user.as_deref(), limit);
+        let fallback = collect_history_search_results(
+            &self.session_history,
+            &self.persisted_history,
+            query,
+            limit,
+        );
+        merge_history_matches(db_matches, fallback, limit)
+    }
+}
+
 /// Terminal 发出的事件，供 TerminalView 订阅
 #[derive(Debug, Clone)]
 pub enum TerminalModelEvent {
@@ -3118,7 +3179,7 @@ impl Terminal {
 
         if self.persisted_history != history {
             self.persisted_history = history;
-            cx.emit(TerminalModelEvent::Wakeup);
+            cx.emit(TerminalModelEvent::CommandHistoryChanged);
         }
     }
 
@@ -3226,56 +3287,30 @@ impl Terminal {
         visible_text_from_term(&self.term)
     }
 
-    pub fn history_suggestions(&self, prefix: &str, limit: usize) -> Vec<String> {
-        let history_user = self.history_record_user();
-        let db_matches = self
-            .history_repository
-            .as_ref()
-            .zip(self.history_scope.as_ref())
-            .and_then(|(repo, scope)| repo.suggestions(scope, prefix, limit).ok())
-            .unwrap_or_default();
-        let db_matches = normalize_history_matches(db_matches, history_user.as_deref(), limit);
-        let fallback = collect_history_suggestions_with_cwd(
-            &self.session_history,
-            &self.persisted_history,
-            prefix,
-            limit,
-            self.current_working_dir.as_deref(),
-        );
-        merge_history_matches(db_matches, fallback, limit)
+    /// Capture owned history data without acquiring the SQLite connection lock.
+    /// Execute snapshot queries on a background executor when called from a view.
+    pub fn history_query_snapshot(&self) -> TerminalHistorySnapshot {
+        TerminalHistorySnapshot {
+            history_repository: self.history_repository.clone(),
+            history_scope: self.history_scope.clone(),
+            history_user: self.history_record_user(),
+            session_history: self.session_history.clone(),
+            persisted_history: self.persisted_history.clone(),
+            current_working_dir: self.current_working_dir.clone(),
+        }
     }
 
-    pub fn recent_history(&self, limit: usize) -> Vec<String> {
-        collect_recent_history(&self.session_history, &self.persisted_history, limit)
+    pub fn history_suggestions(&self, prefix: &str, limit: usize) -> Vec<String> {
+        self.history_query_snapshot()
+            .history_suggestions(prefix, limit)
     }
 
     pub fn history_search_results(&self, query: &str, limit: usize) -> Vec<String> {
-        let history_user = self.history_record_user();
-        let db_matches = self
-            .history_repository
-            .as_ref()
-            .zip(self.history_scope.as_ref())
-            .and_then(|(repo, scope)| {
-                repo.list(
-                    scope,
-                    TerminalCommandHistorySort::Latest,
-                    (!query.trim().is_empty()).then_some(query),
-                    limit,
-                )
-                .ok()
-            })
-            .unwrap_or_default()
-            .into_iter()
-            .map(|item| item.command)
-            .collect();
-        let db_matches = normalize_history_matches(db_matches, history_user.as_deref(), limit);
-        let fallback = collect_history_search_results(
-            &self.session_history,
-            &self.persisted_history,
-            query,
-            limit,
-        );
-        merge_history_matches(db_matches, fallback, limit)
+        self.history_query_snapshot()
+            .history_search_results(query, limit)
+    }
+    pub fn recent_history(&self, limit: usize) -> Vec<String> {
+        collect_recent_history(&self.session_history, &self.persisted_history, limit)
     }
 
     pub fn record_command(&mut self, command: &str, cx: &mut Context<Self>) {
@@ -4414,6 +4449,26 @@ async fn receive_terminal_event_for_gpui(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn history_query_snapshot_is_sendable_and_preserves_literal_symbol_prefixes() {
+        fn assert_send<T: Send + 'static>() {}
+        assert_send::<super::TerminalHistorySnapshot>();
+        let mut terminal = test_terminal_with_recording_runtime(RecordingRuntime::new(
+            RecordingRuntimeConfig::default(),
+        ));
+        terminal
+            .session_history
+            .push_back(crate::history::HistoryEntry::new("tail -f out_file".into()));
+        terminal.persisted_history = vec!["tail -f out_other".into(), "tail -f outside".into()];
+        let snapshot = terminal.history_query_snapshot();
+        terminal.session_history.clear();
+        terminal.persisted_history.clear();
+        assert_eq!(
+            snapshot.history_suggestions("tail -f out_", 5),
+            vec!["tail -f out_file", "tail -f out_other"]
+        );
+        assert!(!snapshot.history_search_results("out_", 5).is_empty());
+    }
     #[cfg(target_os = "macos")]
     use super::with_local_terminal_default_env;
     use super::{

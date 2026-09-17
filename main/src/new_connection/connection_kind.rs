@@ -50,9 +50,11 @@ impl NewConnectionCategory {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, PartialEq, Eq)]
 pub(super) enum NewConnectionKind {
     Ssh,
+    Ftp,
     Rdp,
     Vnc,
     Redis,
@@ -76,10 +78,7 @@ impl NewConnectionKind {
     pub(super) fn all_with_registry(registry: &IpcDriverRegistry) -> Vec<Self> {
         let mut items = vec![
             Self::Ssh,
-            Self::Rdp,
-            Self::Vnc,
-            Self::Redis,
-            Self::MongoDB,
+            Self::Ftp,
             Self::Serial,
             Self::Telnet,
             Self::PortForwarding,
@@ -98,6 +97,7 @@ impl NewConnectionKind {
     pub(super) fn label(&self) -> String {
         match self {
             Self::Ssh => "SSH / SFTP".to_string(),
+            Self::Ftp => "FTP / FTPS".to_string(),
             Self::Rdp => "RDP".to_string(),
             Self::Vnc => "VNC".to_string(),
             Self::Redis => "Redis".to_string(),
@@ -114,6 +114,7 @@ impl NewConnectionKind {
     pub(super) fn description(&self) -> String {
         match self {
             Self::Ssh => t!("NewConnection.description_ssh").to_string(),
+            Self::Ftp => t!("NewConnection.description_ftp").to_string(),
             Self::Rdp => t!("NewConnection.description_rdp").to_string(),
             Self::Vnc => t!("NewConnection.description_vnc").to_string(),
             Self::Redis => t!("NewConnection.description_redis").to_string(),
@@ -130,6 +131,7 @@ impl NewConnectionKind {
     pub(super) fn category(&self) -> NewConnectionCategory {
         match self {
             Self::Ssh
+            | Self::Ftp
             | Self::Rdp
             | Self::Vnc
             | Self::Serial
@@ -151,6 +153,7 @@ impl NewConnectionKind {
     pub(super) fn icon(&self) -> Icon {
         match self {
             Self::Ssh => connection_type_icon(ConnectionType::SshSftp, ConnectionVisualSize::Hero),
+            Self::Ftp => connection_type_icon(ConnectionType::Ftp, ConnectionVisualSize::Hero),
             Self::Rdp => connection_type_icon(ConnectionType::Rdp, ConnectionVisualSize::Hero),
             Self::Vnc => connection_type_icon(ConnectionType::Vnc, ConnectionVisualSize::Hero),
             Self::Redis => connection_type_icon(ConnectionType::Redis, ConnectionVisualSize::Hero),
@@ -283,18 +286,25 @@ mod tests {
     }
 
     #[test]
-    fn remote_desktop_kinds_are_available_from_new_connection() {
+    fn removed_connection_products_are_not_available_from_new_connection() {
         let registry = IpcDriverRegistry::empty();
         let kinds = NewConnectionKind::all_with_registry(&registry);
-        assert!(kinds.contains(&NewConnectionKind::Rdp));
-        assert!(kinds.contains(&NewConnectionKind::Vnc));
+        assert!(kinds.contains(&NewConnectionKind::Ftp));
+        assert!(!kinds.contains(&NewConnectionKind::Rdp));
+        assert!(!kinds.contains(&NewConnectionKind::Vnc));
+        assert!(!kinds.contains(&NewConnectionKind::Redis));
+        assert!(!kinds.contains(&NewConnectionKind::MongoDB));
+    }
+
+    #[test]
+    fn ftp_kind_uses_file_transfer_copy_and_terminal_category() {
+        let kind = NewConnectionKind::Ftp;
+
+        assert_eq!(kind.label(), "FTP / FTPS");
+        assert_eq!(kind.category(), NewConnectionCategory::Terminal);
         assert_eq!(
-            NewConnectionKind::Rdp.category(),
-            NewConnectionCategory::Terminal
-        );
-        assert_eq!(
-            NewConnectionKind::Vnc.category(),
-            NewConnectionCategory::Terminal
+            kind.description(),
+            t!("NewConnection.description_ftp").to_string()
         );
     }
 

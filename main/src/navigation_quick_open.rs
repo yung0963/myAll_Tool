@@ -66,9 +66,8 @@ pub(crate) fn visible_connection_types() -> Vec<ConnectionType> {
     vec![
         ConnectionType::All,
         ConnectionType::SshSftp,
+        ConnectionType::Ftp,
         ConnectionType::Database,
-        ConnectionType::Redis,
-        ConnectionType::MongoDB,
         ConnectionType::Serial,
         ConnectionType::Telnet,
     ]
@@ -82,10 +81,7 @@ pub(crate) fn overflow_connection_types() -> Vec<ConnectionType> {
 }
 
 pub(crate) fn is_overflow_connection_type(connection_type: ConnectionType) -> bool {
-    matches!(
-        connection_type,
-        ConnectionType::PortForwarding | ConnectionType::Rdp | ConnectionType::Vnc
-    )
+    matches!(connection_type, ConnectionType::PortForwarding)
 }
 
 pub(crate) fn leading_navigation_applications(

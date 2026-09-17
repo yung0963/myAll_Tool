@@ -1,7 +1,7 @@
 use one_core::storage::{
-    ConnectionType, DbConnectionConfig, MongoDBParams, PortForwardingKind, PortForwardingParams,
-    RedisMode, RedisParams, RemoteDesktopParams, SerialParams, SshAuthMethod, SshParams,
-    StoredConnection,
+    ConnectionType, DbConnectionConfig, FtpParams, FtpSecurity, FtpTransferMode, MongoDBParams,
+    PortForwardingKind, PortForwardingParams, RedisMode, RedisParams, RemoteDesktopParams,
+    SerialParams, SshAuthMethod, SshParams, StoredConnection,
 };
 use serde_json::Value;
 
@@ -18,6 +18,7 @@ pub(super) fn connection_share_text_for_locale(
     let fields = match connection.connection_type {
         ConnectionType::Database => database_fields(locale, connection.to_db_connection().ok()?),
         ConnectionType::SshSftp => ssh_fields(locale, connection.to_ssh_params().ok()?),
+        ConnectionType::Ftp => ftp_fields(locale, connection.to_ftp_params().ok()?),
         ConnectionType::Redis => redis_fields(locale, connection.to_redis_params().ok()?),
         ConnectionType::MongoDB => mongodb_fields(locale, connection.to_mongodb_params().ok()?),
         ConnectionType::Serial => serial_fields(locale, connection.to_serial_params().ok()?),
@@ -136,6 +137,37 @@ fn ssh_fields(locale: &str, params: SshParams) -> Vec<(&'static str, String)> {
             params.default_directory.unwrap_or_default(),
         ),
     ]
+}
+
+fn ftp_fields(locale: &str, params: FtpParams) -> Vec<(&'static str, String)> {
+    vec![
+        ("host", params.host),
+        ("port", params.port.to_string()),
+        ("username", params.username),
+        ("initial_directory", params.initial_directory),
+        ("security", ftp_security_label(locale, params.security)),
+        (
+            "transfer_mode",
+            ftp_transfer_mode_label(locale, params.transfer_mode),
+        ),
+    ]
+}
+
+fn ftp_security_label(locale: &str, security: FtpSecurity) -> String {
+    let key = match security {
+        FtpSecurity::Plain => "Connection.Share.ftp_plain",
+        FtpSecurity::ExplicitTls => "Connection.Share.ftp_explicit_tls",
+        FtpSecurity::ImplicitTls => "Connection.Share.ftp_implicit_tls",
+    };
+    tr(locale, key)
+}
+
+fn ftp_transfer_mode_label(locale: &str, mode: FtpTransferMode) -> String {
+    let key = match mode {
+        FtpTransferMode::Passive => "Connection.Share.ftp_passive",
+        FtpTransferMode::Active => "Connection.Share.ftp_active",
+    };
+    tr(locale, key)
 }
 
 fn redis_fields(locale: &str, params: RedisParams) -> Vec<(&'static str, String)> {
@@ -350,6 +382,7 @@ fn connection_type_key(connection_type: ConnectionType) -> &'static str {
         ConnectionType::All => "Connection.Share.type_all",
         ConnectionType::Database => "Connection.Share.type_database",
         ConnectionType::SshSftp => "Connection.Share.type_ssh_sftp",
+        ConnectionType::Ftp => "Connection.Share.type_ftp",
         ConnectionType::Redis => "Connection.Share.type_redis",
         ConnectionType::MongoDB => "Connection.Share.type_mongodb",
         ConnectionType::Serial => "Connection.Share.type_serial",

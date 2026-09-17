@@ -3640,7 +3640,11 @@ impl TabContainer {
                                 .h(self.sidebar_bottom_height(&bottom, layout))
                                 .flex_shrink_0()
                                 .overflow_hidden()
-                                .child(self.render_sidebar_dock(SidebarPlacement::Bottom, bottom, cx)),
+                                .child(self.render_sidebar_dock(
+                                    SidebarPlacement::Bottom,
+                                    bottom,
+                                    cx,
+                                )),
                         ),
                 )
                 .into_any_element()

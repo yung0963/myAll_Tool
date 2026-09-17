@@ -15,23 +15,21 @@ fn connection_navigation_partition_is_complete_and_stable() {
         vec![
             ConnectionType::All,
             ConnectionType::SshSftp,
+            ConnectionType::Ftp,
             ConnectionType::Database,
-            ConnectionType::Redis,
-            ConnectionType::MongoDB,
             ConnectionType::Serial,
             ConnectionType::Telnet,
         ]
     );
-    assert_eq!(
-        overflow,
-        vec![
-            ConnectionType::PortForwarding,
-            ConnectionType::Rdp,
-            ConnectionType::Vnc,
-        ]
-    );
-    assert_eq!(combined, ConnectionType::all());
-    for connection_type in ConnectionType::all() {
+    assert_eq!(overflow, vec![ConnectionType::PortForwarding,]);
+    let supported = ConnectionType::all()
+        .into_iter()
+        .filter(|connection_type| {
+            crate::product_capabilities::supports_connection_type(*connection_type)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(combined, supported);
+    for connection_type in supported {
         assert_eq!(
             is_overflow_connection_type(connection_type),
             overflow.contains(&connection_type)

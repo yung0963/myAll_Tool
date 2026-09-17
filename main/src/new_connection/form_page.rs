@@ -1,5 +1,6 @@
 use db::ipc::IpcDriverRegistry;
 use db_view::connection_form_window::{ConnectionFormWindow, ConnectionFormWindowConfig};
+use ftp_view::{FtpFormWindow, FtpFormWindowConfig};
 use gpui::{AnyView, AnyWindowHandle, AppContext, Context, Entity, Window};
 use mongodb_view::{MongoFormWindow, MongoFormWindowConfig};
 use one_core::cloud_sync::get_cached_team_options;
@@ -46,6 +47,7 @@ impl NewConnectionFormPage for NewConnectionKind {
     ) -> NewConnectionFormResult {
         match self {
             Self::Ssh => build_ssh_form(parent, window, cx),
+            Self::Ftp => build_ftp_form(parent, window, cx),
             Self::Rdp => build_remote_desktop_form(parent, RemoteDesktopProtocol::Rdp, window, cx),
             Self::Vnc => build_remote_desktop_form(parent, RemoteDesktopProtocol::Vnc, window, cx),
             Self::Redis => build_redis_form(parent, window, cx),
@@ -243,6 +245,37 @@ fn build_ssh_form(
     };
 
     NewConnectionFormResult::Form(cx.new(|cx| SshFormWindow::new(config, window, cx)).into())
+}
+
+fn build_ftp_form(
+    parent: Entity<HomePage>,
+    window: &mut Window,
+    cx: &mut Context<NewConnectionWindow>,
+) -> NewConnectionFormResult {
+    let Some(config) = parent.update(cx, |home, cx| {
+        if !home.is_master_key_ready_for_new_connection() {
+            return None;
+        }
+
+        let editing_connection = home.editing_connection_id.and_then(|id| {
+            home.connections
+                .iter()
+                .find(|c| c.id == Some(id) && c.connection_type == ConnectionType::Ftp)
+                .cloned()
+        });
+        home.editing_connection_id = None;
+        Some(FtpFormWindowConfig {
+            editing_connection,
+            initial_connection: None,
+            on_saved: None,
+            workspaces: home.workspaces.clone(),
+            teams: get_cached_team_options(cx),
+        })
+    }) else {
+        return NewConnectionFormResult::Blocked;
+    };
+
+    NewConnectionFormResult::Form(cx.new(|cx| FtpFormWindow::new(config, window, cx)).into())
 }
 
 fn build_redis_form(

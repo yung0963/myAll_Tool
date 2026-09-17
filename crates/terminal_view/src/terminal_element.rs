@@ -1945,6 +1945,12 @@ mod tests {
 
     #[test]
     fn incremental_cache_tracks_repeated_symbol_echo_and_erase() {
+        for symbol in ["*", "_", "\\", "%", "-"] {
+            assert_repeated_symbol_echo_and_erase(symbol);
+        }
+    }
+
+    fn assert_repeated_symbol_echo_and_erase(symbol: &str) {
         let dimensions = TestTermDimensions {
             columns: 16,
             screen_lines: 2,
@@ -1965,7 +1971,7 @@ mod tests {
         cache.update(&mut term, &addon_manager, &theme, None);
 
         for input_index in 1..=4 {
-            processor.advance(&mut term, b"*");
+            processor.advance(&mut term, symbol.as_bytes());
             cache.update(&mut term, &addon_manager, &theme, None);
 
             let mut rebuilt =
@@ -1984,7 +1990,7 @@ mod tests {
                 "incremental cache diverged from a full rebuild after symbol input {input_index}"
             );
             assert!(
-                actual[0].starts_with(&format!("$ {}", "*".repeat(input_index))),
+                actual[0].starts_with(&format!("$ {}", symbol.repeat(input_index))),
                 "unexpected visible row after symbol input {input_index}: {:?}",
                 actual[0]
             );
@@ -2013,7 +2019,7 @@ mod tests {
                 "incremental cache diverged from a full rebuild after symbol erase {erase_index}"
             );
             assert!(
-                actual[0].starts_with(&format!("$ {}", "*".repeat(remaining))),
+                actual[0].starts_with(&format!("$ {}", symbol.repeat(remaining))),
                 "unexpected visible row after symbol erase {erase_index}: {:?}",
                 actual[0]
             );

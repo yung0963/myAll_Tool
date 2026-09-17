@@ -9,6 +9,7 @@ pub(super) enum ConnectionCopyAction {
     Name,
     DatabaseAddress,
     SshTarget,
+    FtpAddress,
     RedisAddress,
     MongoDbAddress,
     RemoteDesktopAddress,
@@ -78,6 +79,14 @@ pub(super) fn connection_copy_actions(
                     ConnectionCopyAction::SshCommand,
                     ConnectionCopyAction::SftpCommand,
                 ]);
+            }
+        }
+        ConnectionType::Ftp => {
+            if connection_address(connection).is_some() {
+                actions.push(ConnectionCopyAction::FtpAddress);
+            }
+            if connection_username(connection).is_some() {
+                actions.push(ConnectionCopyAction::Username);
             }
         }
         ConnectionType::Redis => {
@@ -175,6 +184,7 @@ pub(super) fn connection_copy_text(
         ConnectionCopyAction::Name => non_empty(connection.name.clone()),
         ConnectionCopyAction::DatabaseAddress => database_address(connection),
         ConnectionCopyAction::SshTarget => connection_address(connection),
+        ConnectionCopyAction::FtpAddress => connection_address(connection),
         ConnectionCopyAction::RedisAddress => connection_address(connection),
         ConnectionCopyAction::MongoDbAddress => connection_address(connection),
         ConnectionCopyAction::RemoteDesktopAddress => connection_address(connection),
@@ -262,6 +272,10 @@ fn connection_address(connection: &StoredConnection) -> Option<String> {
             .to_ssh_params()
             .ok()
             .and_then(|params| optional_host_port(&params.host, Some(params.port))),
+        ConnectionType::Ftp => connection
+            .to_ftp_params()
+            .ok()
+            .and_then(|params| optional_host_port(&params.host, Some(params.port))),
         ConnectionType::Redis => connection.to_redis_params().ok().and_then(|params| {
             (params.mode == RedisMode::Standalone)
                 .then(|| optional_host_port(&params.host, Some(params.port)))
@@ -336,6 +350,7 @@ fn connection_username(connection: &StoredConnection) -> Option<String> {
     let username = match connection.connection_type {
         ConnectionType::Database => connection.to_db_connection().ok()?.username,
         ConnectionType::SshSftp => connection.to_ssh_params().ok()?.username,
+        ConnectionType::Ftp => connection.to_ftp_params().ok()?.username,
         ConnectionType::Redis => connection.to_redis_params().ok()?.username?,
         ConnectionType::MongoDB => connection.to_mongodb_params().ok()?.username?,
         ConnectionType::Rdp | ConnectionType::Vnc => {

@@ -2,10 +2,13 @@ use super::*;
 
 impl TerminalView {
     pub(super) fn dismiss_history_prompt(&mut self) {
+        self.suggestion_debounce.take();
+        self.history_query_task.take();
         self.history_prompt.dismiss();
     }
 
     pub(super) fn hide_history_prompt_dropdown(&mut self) {
+        self.history_query_task.take();
         self.history_prompt.hide_dropdown();
     }
 
@@ -25,12 +28,14 @@ impl TerminalView {
 
     /// 防抖刷新建议匹配（30ms 延迟）
     pub(super) fn schedule_debounced_refresh(&mut self, cx: &mut Context<Self>) {
+        self.history_query_task.take();
         self.suggestion_debounce.take();
         self.suggestion_debounce = Some(cx.spawn(async move |this, cx| {
             cx.background_executor()
                 .timer(Duration::from_millis(30))
                 .await;
             let _ = this.update(cx, |this, cx| {
+                this.suggestion_debounce = None;
                 if this.history_prompt.mode() != HistoryPromptMode::InlineSuggest
                     || this.history_prompt.query_input().is_empty()
                 {
@@ -81,6 +86,8 @@ impl TerminalView {
     }
 
     pub(super) fn dismiss_history_prompt_matches(&mut self) {
+        self.suggestion_debounce.take();
+        self.history_query_task.take();
         self.history_prompt.dismiss_matches();
     }
 

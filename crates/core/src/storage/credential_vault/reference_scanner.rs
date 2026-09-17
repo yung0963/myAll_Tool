@@ -4,7 +4,7 @@ use anyhow::{Context, Result, bail};
 use rusqlite::{OptionalExtension, TransactionBehavior};
 
 use crate::storage::{
-    ConnectionType, CredentialReference, DbConnectionConfig, MongoDBParams, RedisParams,
+    ConnectionType, CredentialReference, DbConnectionConfig, FtpParams, MongoDBParams, RedisParams,
     RemoteDesktopParams, SshParams, TelnetParams,
 };
 
@@ -135,6 +135,7 @@ fn parse_connection_type(value: &str) -> Result<ConnectionType> {
     match value {
         "Database" => Ok(ConnectionType::Database),
         "SshSftp" => Ok(ConnectionType::SshSftp),
+        "Ftp" => Ok(ConnectionType::Ftp),
         "Redis" => Ok(ConnectionType::Redis),
         "MongoDB" => Ok(ConnectionType::MongoDB),
         "Serial" => Ok(ConnectionType::Serial),
@@ -180,6 +181,7 @@ fn direct_locations(
     let locations = match connection.connection_type {
         ConnectionType::SshSftp => ssh_locations(connection, identity)?,
         ConnectionType::Database => database_locations(connection, identity)?,
+        ConnectionType::Ftp => ftp_locations(connection, identity)?,
         ConnectionType::Redis => redis_locations(connection, identity)?,
         ConnectionType::MongoDB => mongodb_locations(connection, identity)?,
         ConnectionType::Telnet => telnet_locations(connection, identity)?,
@@ -189,6 +191,20 @@ fn direct_locations(
         _ => Vec::new(),
     };
     Ok(locations)
+}
+
+fn ftp_locations(
+    connection: &ScannedConnection,
+    identity: &CredentialIdentity,
+) -> Result<Vec<CredentialReferenceLocation>> {
+    let params: FtpParams = parse_params(connection)?;
+    Ok(matching_locations(
+        [(
+            CredentialReferenceLocation::Primary,
+            params.credential_reference.as_ref(),
+        )],
+        identity,
+    ))
 }
 
 pub(super) fn ssh_locations(

@@ -43,7 +43,16 @@ impl HomePage {
                 let repo = storage
                     .get::<ConnectionRepository>()
                     .ok_or_else(|| anyhow::anyhow!("ConnectionRepository not found"))?;
-                Ok::<_, anyhow::Error>((repo.list()?, IpcDriverRegistry::load_default()))
+                let connections = repo
+                    .list()?
+                    .into_iter()
+                    .filter(|connection| {
+                        crate::product_capabilities::supports_connection_type(
+                            connection.connection_type,
+                        )
+                    })
+                    .collect();
+                Ok::<_, anyhow::Error>((connections, IpcDriverRegistry::load_default()))
             })()
         });
 
